@@ -1,10 +1,10 @@
 # WR Locações — Sistema de controle de locação
 
-Controle de saída e retorno de equipamentos (ferramentas por **tag**, andaimes por **número de peças**), taxa de locação mensal/anual em % e emissão de contrato com **numeração sequencial**.
+Controle de saída e retorno de equipamentos (ferramentas por **tag**, andaimes por **número de peças**), taxa de locação em % nas modalidades diária, semanal, quinzenal, mensal e anual (taxa própria por equipamento) e emissão de contrato com **numeração sequencial**.
 
 - **Frontend:** `index.html` (arquivo único, GitHub Pages)
-- **Banco e login:** Supabase (`supabase/migrations/001_estrutura.sql`)
-- **Versão:** 1.2.0 · modelo de contrato `CT-LOC v1` (histórico na página *Atualizações* do sistema)
+- **Banco e login:** Supabase (`supabase/migrations/001_estrutura.sql` e `002_modalidades.sql`, já aplicadas)
+- **Versão:** 1.4.0 · modelo de contrato `CT-LOC v1` (histórico na página *Atualizações* do sistema)
 
 ---
 
@@ -35,7 +35,7 @@ Quem não estiver na tabela `equipe` não vê nem altera nada, mesmo que consiga
 | Quem alterou o quê e quando | Tabela `auditoria` |
 | Só usuários logados veem ou alteram dados | RLS (Row Level Security) |
 
-Valor por período = valor base × quantidade × taxa (mensal ou anual). O acumulado é calculado pró-rata por dia (mês = 30 dias, ano = 365), descontando devoluções parciais.
+Valor por período = valor base × quantidade × taxa da modalidade (diária, semanal, quinzenal, mensal ou anual). O acumulado é calculado pró-rata por dia (semana = 7, quinzena = 15, mês = 30, ano = 365 dias), descontando devoluções parciais.
 
 ## Plano gratuito do Supabase (decisão de 23/09/2026)
 O sistema roda no plano **Free**. Cuidados obrigatórios:

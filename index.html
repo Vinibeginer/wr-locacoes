@@ -89,6 +89,7 @@ td.fill{max-width:0;width:100%}
 @media (min-width:1201px){.grid2.painel{grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr)}}
 @media (max-width:1200px){.grid2.painel{grid-template-columns:1fr}}
 .trunc{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.taxas-cel{font-family:var(--f-mono);font-size:12px;white-space:nowrap}.taxas-cel i{font-style:normal;color:var(--ink-3,#999);margin:0 4px}
 .busca{display:flex;align-items:center;gap:10px;margin:14px 0 4px}
 .busca input{max-width:380px}
 td.mono{white-space:nowrap}
@@ -201,10 +202,14 @@ body.no-nav aside.nav{display:none}
 <script>
 /* =========================================================
    WR Locações — protótipo de controle de locação
-   APP_VERSION 1.3.0 · template de contrato v1
+   APP_VERSION 1.4.0 · template de contrato v1
    ========================================================= */
-const APP_VERSION = "1.3.0";
+const APP_VERSION = "1.4.0";
 const VERSOES = [
+  {v:"1.4.0", data:"2026-09-23", itens:[
+    "Novas modalidades de cobrança: diária, semanal e quinzenal, além de mensal e anual.",
+    "Cada equipamento tem taxa própria para cada modalidade; taxas padrão em Configurações.",
+    "Nova locação: campo Prazo (dias) que calcula a previsão de retorno automaticamente."]},
   {v:"1.3.0", data:"2026-09-23", itens:[
     "Busca nas listas de ferramentas, andaimes, clientes e locações (ignora acentos e maiúsculas).",
     "Nova locação: a ferramenta é adicionada digitando a tag (com sugestões) e Enter — funciona também com leitor de código de barras.",
@@ -229,9 +234,27 @@ const VERSOES = [
     "Protótipo: ferramentas por tag, andaimes por número de peças, taxa mensal/anual em % e contrato numerado."]}
 ];
 const TEMPLATE_VERSAO = "CT-LOC v1";
+/* modalidades de cobrança: taxa própria por equipamento, período em dias para o pró-rata */
+const MODS = {
+  diaria:    {nome:"Diária",    per:"dia",      adj:"diária",    dias:1,   k:"taxaDiaria",    db:"taxa_diaria",    step:"0.001"},
+  semanal:   {nome:"Semanal",   per:"semana",   adj:"semanal",   dias:7,   k:"taxaSemanal",   db:"taxa_semanal",   step:"0.01"},
+  quinzenal: {nome:"Quinzenal", per:"quinzena", adj:"quinzenal", dias:15,  k:"taxaQuinzenal", db:"taxa_quinzenal", step:"0.01"},
+  mensal:    {nome:"Mensal",    per:"mês",      adj:"mensal",    dias:30,  k:"taxaMensal",    db:"taxa_mensal",    step:"0.01"},
+  anual:     {nome:"Anual",     per:"ano",      adj:"anual",     dias:365, k:"taxaAnual",     db:"taxa_anual",     step:"0.01"}
+};
+const MOD_ORDEM = ["diaria","semanal","quinzenal","mensal","anual"];
+const mod = m => MODS[m] || MODS.mensal;
+const taxaDe = (it, m) => num(it[mod(m).k]);
+const taxasVazias = () => Object.fromEntries(MOD_ORDEM.map(m=>[MODS[m].k,""]));
+const taxasDb = r => Object.fromEntries(MOD_ORDEM.map(m=>[MODS[m].db, r[MODS[m].k]]));
+const taxasDe = r => Object.fromEntries(MOD_ORDEM.map(m=>[MODS[m].k, +r[MODS[m].db]||0]));
+const taxasCopia = r => Object.fromEntries(MOD_ORDEM.map(m=>[MODS[m].k, num(r[MODS[m].k])]));
+const taxasTexto = r => Object.fromEntries(MOD_ORDEM.map(m=>[MODS[m].k, String(r[MODS[m].k] ?? "")]));
+const taxasForm = (R, cfg) => Object.fromEntries(MOD_ORDEM.map(m=>{const k=MODS[m].k; return [k, R[k]===""||R[k]==null ? num(cfg[k+"Padrao"]) : num(R[k])];}));
+const camposTaxa = (pre, R, cfg) => MOD_ORDEM.map(m=>{const M=MODS[m]; return `<label class="f">Taxa ${M.adj} (%)<input id="${pre}-${m}" type="number" step="${M.step}" min="0" data-bind="${pre}.${M.k}" value="${esc(R[M.k])}" placeholder="${cfg[M.k+"Padrao"]}"></label>`;}).join("");
 const DEFAULT_CFG = {
   razao:"WR LOCAÇÕES", cnpj:"", endereco:"", cidade:"", foro:"",
-  taxaMensalPadrao:8, taxaAnualPadrao:72, alertaDias:7, multaAtraso:2
+  taxaDiariaPadrao:0.3, taxaSemanalPadrao:2, taxaQuinzenalPadrao:4, taxaMensalPadrao:8, taxaAnualPadrao:72, alertaDias:7, multaAtraso:2
 };
 
 const S = { mode:"loading", clientes:[], ferramentas:[], andaimes:[], locacoes:[], config:{...DEFAULT_CFG}, contador:0 };
@@ -241,7 +264,7 @@ const $ = s => document.querySelector(s);
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const BRL = new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
 const brl = v => BRL.format(+v || 0);
-const pct = v => (+v||0).toLocaleString("pt-BR",{maximumFractionDigits:2}) + "%";
+const pct = v => (+v||0).toLocaleString("pt-BR",{maximumFractionDigits:3}) + "%";
 const num = v => { if (v === "" || v == null) return 0; const n = +String(v).replace(",", "."); return isFinite(n) ? n : 0; };
 const todayISO = () => { const d = new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 const addDays = (iso,n) => { const d = new Date(iso+"T12:00:00"); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
@@ -272,19 +295,18 @@ function andaimeEmUso(id){
   return S.locacoes.filter(locAtiva).reduce((s,l)=> s + l.itens.filter(it=>it.tipo==="andaime" && it.refId===id).reduce((a,it)=>a+outstanding(it),0), 0);
 }
 function andaimeDisp(a){ return (a.qtdTotal||0) - andaimeEmUso(a.id); }
-/* valor do período contratado (mensal ou anual) */
+/* valor do período contratado (dia, semana, quinzena, mês ou ano) */
 function valorItemPeriodo(it, modalidade){
-  const taxa = modalidade==="anual" ? it.taxaAnual : it.taxaMensal;
-  return (it.valorBase||0) * (it.qtd||0) * (taxa||0) / 100;
+  return (it.valorBase||0) * (it.qtd||0) * taxaDe(it, modalidade) / 100;
 }
 function valorPeriodo(l){ return l.itens.reduce((s,it)=>s+valorItemPeriodo(it,l.modalidade),0); }
 /* custo acumulado pró-rata, considerando devoluções parciais ao longo do tempo */
 function acumulado(l, ateISO){
   const fim = l.status==="encerrada" && l.dataEncerramento ? l.dataEncerramento : (ateISO || todayISO());
-  const base = l.modalidade==="anual" ? 365 : 30;
+  const base = mod(l.modalidade).dias;
   let total = 0;
   l.itens.forEach((it, idx) => {
-    const diaria = (it.valorBase||0) * ((l.modalidade==="anual"?it.taxaAnual:it.taxaMensal)||0)/100/base;
+    const diaria = (it.valorBase||0) * taxaDe(it, l.modalidade)/100/base;
     const evs = (l.devolucoes||[]).map(d => ({data:d.data, q:(d.itens||[]).filter(x=>x.idx===idx).reduce((a,x)=>a+x.qtd,0)})).filter(e=>e.q>0).sort((a,b)=>a.data<b.data?-1:1);
     let q = it.qtd, cur = l.dataSaida;
     for (const e of evs){ const d = Math.max(0, daysBetween(cur, e.data < fim ? e.data : fim)); total += q*d*diaria; q -= e.q; cur = e.data < fim ? e.data : fim; }
@@ -315,13 +337,13 @@ let session = null, channel = null, reloadTimer = null;
 
 const toDb = {
   clientes: r => ({nome:r.nome, doc:r.doc, endereco:r.endereco, contato:r.contato, telefone:r.telefone, email:r.email}),
-  ferramentas: r => ({tag:r.tag, descricao:r.descricao, categoria:r.categoria, valor_base:r.valorBase, taxa_mensal:r.taxaMensal, taxa_anual:r.taxaAnual, manutencao:r.manutencao}),
-  andaimes: r => ({codigo:r.codigo, descricao:r.descricao, valor_unitario:r.valorUnitario, qtd_total:r.qtdTotal, taxa_mensal:r.taxaMensal, taxa_anual:r.taxaAnual})
+  ferramentas: r => ({tag:r.tag, descricao:r.descricao, categoria:r.categoria, valor_base:r.valorBase, ...taxasDb(r), manutencao:r.manutencao}),
+  andaimes: r => ({codigo:r.codigo, descricao:r.descricao, valor_unitario:r.valorUnitario, qtd_total:r.qtdTotal, ...taxasDb(r)})
 };
 const fromDb = {
   clientes: r => ({id:r.id, nome:r.nome, doc:r.doc, endereco:r.endereco, contato:r.contato, telefone:r.telefone, email:r.email}),
-  ferramentas: r => ({id:r.id, tag:r.tag, descricao:r.descricao, categoria:r.categoria, valorBase:+r.valor_base, taxaMensal:+r.taxa_mensal, taxaAnual:+r.taxa_anual, manutencao:!!r.manutencao}),
-  andaimes: r => ({id:r.id, codigo:r.codigo, descricao:r.descricao, valorUnitario:+r.valor_unitario, qtdTotal:r.qtd_total, taxaMensal:+r.taxa_mensal, taxaAnual:+r.taxa_anual})
+  ferramentas: r => ({id:r.id, tag:r.tag, descricao:r.descricao, categoria:r.categoria, valorBase:+r.valor_base, ...taxasDe(r), manutencao:!!r.manutencao}),
+  andaimes: r => ({id:r.id, codigo:r.codigo, descricao:r.descricao, valorUnitario:+r.valor_unitario, qtdTotal:r.qtd_total, ...taxasDe(r)})
 };
 function mapLoc(r){
   return {
@@ -329,12 +351,13 @@ function mapLoc(r){
     clienteId:r.cliente_id, cliente:r.cliente, local:r.local, responsavel:r.responsavel,
     dataSaida:r.data_saida, previsaoRetorno:r.previsao_retorno, dataEncerramento:r.data_encerramento,
     empresa:r.empresa, multaAtraso:+r.multa_atraso, templateVersao:r.template_versao, appVersao:r.app_versao, criadoEm:r.created_at,
-    itens:(r.locacao_itens||[]).sort((a,b)=>a.idx-b.idx).map(i=>({tipo:i.tipo, refId:i.ref_id, tag:i.tag, descricao:i.descricao, qtd:i.qtd, qtdDevolvida:i.qtd_devolvida, valorBase:+i.valor_base, taxaMensal:+i.taxa_mensal, taxaAnual:+i.taxa_anual})),
+    itens:(r.locacao_itens||[]).sort((a,b)=>a.idx-b.idx).map(i=>({tipo:i.tipo, refId:i.ref_id, tag:i.tag, descricao:i.descricao, qtd:i.qtd, qtdDevolvida:i.qtd_devolvida, valorBase:+i.valor_base, ...taxasDe(i)})),
     devolucoes:(r.devolucoes||[]).sort((a,b)=>a.data<b.data?-1:a.data>b.data?1:(a.created_at<b.created_at?-1:1)).map(d=>({data:d.data, itens:d.itens||[], cond:d.cond, obs:d.obs}))
   };
 }
 function mapCfg(c){
   return c ? {razao:c.razao, cnpj:c.cnpj, endereco:c.endereco, cidade:c.cidade, foro:c.foro,
+    taxaDiariaPadrao:+c.taxa_diaria_padrao, taxaSemanalPadrao:+c.taxa_semanal_padrao, taxaQuinzenalPadrao:+c.taxa_quinzenal_padrao,
     taxaMensalPadrao:+c.taxa_mensal_padrao, taxaAnualPadrao:+c.taxa_anual_padrao, multaAtraso:+c.multa_atraso, alertaDias:c.alerta_dias} : {...DEFAULT_CFG};
 }
 function friendly(e){
@@ -392,6 +415,7 @@ async function put(col, id, data){
   let res;
   if (col==="config"){
     res = await sb.from("config").update({razao:data.razao, cnpj:data.cnpj, endereco:data.endereco, cidade:data.cidade, foro:data.foro,
+      taxa_diaria_padrao:data.taxaDiariaPadrao, taxa_semanal_padrao:data.taxaSemanalPadrao, taxa_quinzenal_padrao:data.taxaQuinzenalPadrao,
       taxa_mensal_padrao:data.taxaMensalPadrao, taxa_anual_padrao:data.taxaAnualPadrao, multa_atraso:data.multaAtraso, alerta_dias:data.alertaDias,
       updated_at:new Date().toISOString()}).eq("id",1);
   } else if (S[col].some(x=>x.id===id)) {
@@ -514,8 +538,8 @@ const newLoc = () => ({clienteId:"", local:"", responsavel:"", saida:todayISO(),
 const D = {
   loc: newLoc(),
   cli: {id:null,nome:"",doc:"",endereco:"",contato:"",telefone:"",email:""},
-  fer: {id:null,tag:"",descricao:"",categoria:"",valorBase:"",taxaMensal:"",taxaAnual:"",manutencao:false},
-  and: {id:null,codigo:"",descricao:"",valorUnitario:"",qtdTotal:"",taxaMensal:"",taxaAnual:""},
+  fer: {id:null,tag:"",descricao:"",categoria:"",valorBase:"",...taxasVazias(),manutencao:false},
+  and: {id:null,codigo:"",descricao:"",valorUnitario:"",qtdTotal:"",...taxasVazias()},
   cfg: null,
   dev: null
 };
@@ -550,7 +574,7 @@ const banner = () => bannerVersao() + (S.mode==="local" ? `<div class="banner"><
 /* ----- Painel ----- */
 function vPainel(){
   const ativas = S.locacoes.filter(locAtiva);
-  const receitaMes = ativas.reduce((s,l)=> s + (l.modalidade==="anual" ? valorPeriodo(l)/12 : valorPeriodo(l)), 0);
+  const receitaMes = ativas.reduce((s,l)=> s + (l.modalidade==="anual" ? valorPeriodo(l)/12 : valorPeriodo(l)*30/mod(l.modalidade).dias), 0);
   const atras = ativas.filter(l=>situacao(l).atraso);
   const ferLoc = S.ferramentas.filter(f=>ferramentaLocada(f.id)).length;
   const pecasUso = S.andaimes.reduce((s,a)=>s+andaimeEmUso(a.id),0);
@@ -579,7 +603,7 @@ function vPainel(){
 }
 function tabelaLoc(list, compact){
   return `<div class="tbl-wrap"><table><thead><tr><th>Contrato</th><th>Cliente</th>${compact?"":"<th>Saída</th>"}<th>Previsão</th>${compact?"":"<th>Itens</th>"}<th class="num">Valor</th><th>Situação</th></tr></thead><tbody>
-  ${list.map(l=>{const s=situacao(l); return `<tr class="click" data-open="${l.id}" tabindex="0"><td class="cnum">${esc(l.numeroFmt)}</td><td${compact?' class="fill"':""}>${compact?`<span class="trunc" title="${esc(clienteNome(l))}">${esc(clienteNome(l))}</span>`:esc(clienteNome(l))}</td>${compact?"":`<td class="mono">${fmtD(l.dataSaida)}</td>`}<td class="mono">${fmtD(l.previsaoRetorno)}</td>${compact?"":`<td class="muted">${resumoItens(l)}</td>`}<td class="num">${brl(valorPeriodo(l))}<span class="muted">/${l.modalidade==="anual"?"ano":"mês"}</span></td><td><span class="pill ${s.cls}">${s.txt}</span></td></tr>`}).join("")}
+  ${list.map(l=>{const s=situacao(l); return `<tr class="click" data-open="${l.id}" tabindex="0"><td class="cnum">${esc(l.numeroFmt)}</td><td${compact?' class="fill"':""}>${compact?`<span class="trunc" title="${esc(clienteNome(l))}">${esc(clienteNome(l))}</span>`:esc(clienteNome(l))}</td>${compact?"":`<td class="mono">${fmtD(l.dataSaida)}</td>`}<td class="mono">${fmtD(l.previsaoRetorno)}</td>${compact?"":`<td class="muted">${resumoItens(l)}</td>`}<td class="num">${brl(valorPeriodo(l))}<span class="muted">/${mod(l.modalidade).per}</span></td><td><span class="pill ${s.cls}">${s.txt}</span></td></tr>`}).join("")}
   </tbody></table></div>`;
 }
 
@@ -603,9 +627,10 @@ function vNova(){
         </div>
         <div class="fields">
           <label class="f">Data de saída<input type="date" id="loc-saida" data-bind="loc.saida" value="${L.saida}"></label>
+          <label class="f">Prazo (dias)<input type="number" id="loc-dias" min="0" step="1" inputmode="numeric" value="${Math.max(0,daysBetween(L.saida,L.previsao))}"></label>
           <label class="f">Previsão de retorno<input type="date" id="loc-prev" data-bind="loc.previsao" value="${L.previsao}"></label>
-          <div class="f" style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:500;color:var(--ink-2)">Modalidade da taxa
-            <div class="seg" role="group" aria-label="Modalidade"><button type="button" data-mod="mensal" aria-pressed="${L.modalidade==="mensal"}">Mensal</button><button type="button" data-mod="anual" aria-pressed="${L.modalidade==="anual"}">Anual</button></div>
+          <div class="f" style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:500;color:var(--ink-2);grid-column:1/-1">Modalidade da taxa
+            <div class="seg" role="group" aria-label="Modalidade">${MOD_ORDEM.map(m=>`<button type="button" data-mod="${m}" aria-pressed="${L.modalidade===m}">${MODS[m].nome}</button>`).join("")}</div>
           </div>
         </div>
       </section>
@@ -627,8 +652,8 @@ function vNova(){
             <button type="button" class="btn" data-act="add-a">Adicionar</button>
           </div>
         </div>
-        ${L.itens.length ? `<div class="tbl-wrap"><table><thead><tr><th>Item</th><th class="num">Qtd</th><th class="num">Valor base</th><th class="num">Taxa</th><th class="num">Valor/${L.modalidade==="anual"?"ano":"mês"}</th><th></th></tr></thead><tbody>
-          ${L.itens.map((it,i)=>`<tr><td>${it.tipo==="ferramenta"?`<span class="tag">${esc(it.tag)}</span> `:""}${esc(it.descricao)}</td><td class="num">${it.qtd}</td><td class="num">${brl(it.valorBase)}</td><td class="num">${pct(L.modalidade==="anual"?it.taxaAnual:it.taxaMensal)}</td><td class="num">${brl(valorItemPeriodo(it,L.modalidade))}</td><td class="num"><button type="button" class="btn link sm" data-rm="${i}" aria-label="Remover">Remover</button></td></tr>`).join("")}
+        ${L.itens.length ? `<div class="tbl-wrap"><table><thead><tr><th>Item</th><th class="num">Qtd</th><th class="num">Valor base</th><th class="num">Taxa</th><th class="num">Valor/${mod(L.modalidade).per}</th><th></th></tr></thead><tbody>
+          ${L.itens.map((it,i)=>`<tr><td>${it.tipo==="ferramenta"?`<span class="tag">${esc(it.tag)}</span> `:""}${esc(it.descricao)}</td><td class="num">${it.qtd}</td><td class="num">${brl(it.valorBase)}</td><td class="num">${pct(taxaDe(it,L.modalidade))}</td><td class="num">${brl(valorItemPeriodo(it,L.modalidade))}</td><td class="num"><button type="button" class="btn link sm" data-rm="${i}" aria-label="Remover">Remover</button></td></tr>`).join("")}
         </tbody></table></div>` : `<p class="hint">Nenhum item adicionado.</p>`}
       </section>
     </div>
@@ -638,15 +663,15 @@ function vNova(){
       ${resumoHTML(L)}
       ${L.erro?`<p class="err" role="alert">${esc(L.erro)}</p>`:""}
       <button type="submit" class="btn primary" ${L.busy?"disabled":""} style="justify-content:center">${L.busy?"Registrando…":"Registrar saída e gerar contrato"}</button>
-      <p class="hint">Taxa aplicada sobre o valor base de cada item. Mensal: cobrança por mês; anual: por ano de contrato. Devoluções antecipadas ou atrasos são calculados pró-rata.</p>
+      <p class="hint">Taxa da modalidade escolhida (diária, semanal, quinzenal, mensal ou anual) aplicada sobre o valor base de cada item. Devoluções antecipadas ou atrasos são calculados pró-rata por dia.</p>
     </aside>
   </form>`;
 }
 function resumoHTML(L){
-  const per = L.modalidade==="anual"?"ano":"mês";
+  const per = mod(L.modalidade).per;
   const total = L.itens.reduce((s,it)=>s+valorItemPeriodo(it,L.modalidade),0);
   const dias = Math.max(0, daysBetween(L.saida, L.previsao));
-  const prev = total * dias / (L.modalidade==="anual"?365:30);
+  const prev = total * dias / mod(L.modalidade).dias;
   const f = L.itens.filter(i=>i.tipo==="ferramenta").length, p = L.itens.filter(i=>i.tipo==="andaime").reduce((a,i)=>a+i.qtd,0);
   return `<div class="sum">
     <div class="l"><span>Ferramentas</span><span>${f}</span></div>
@@ -666,7 +691,7 @@ function addItem(tipo){
     if (L.itens.some(i=>i.tipo==="ferramenta"&&i.refId===f.id)){ L.erro=`A tag ${f.tag} já está nesta locação.`; L.pickF=""; return render(); }
     if (f.manutencao){ L.erro=`A ferramenta ${f.tag} está em manutenção.`; return render(); }
     const emUso = ferramentaLocada(f.id); if (emUso){ L.erro=`A ferramenta ${f.tag} está locada no contrato ${emUso.numeroFmt}.`; return render(); }
-    L.itens.push({tipo, refId:f.id, tag:f.tag, descricao:f.descricao, qtd:1, valorBase:num(f.valorBase), taxaMensal:num(f.taxaMensal), taxaAnual:num(f.taxaAnual), qtdDevolvida:0});
+    L.itens.push({tipo, refId:f.id, tag:f.tag, descricao:f.descricao, qtd:1, valorBase:num(f.valorBase), ...taxasCopia(f), qtdDevolvida:0});
     L.pickF="";
   } else {
     const a = S.andaimes.find(x=>x.id===L.pickA), q = Math.floor(num(L.pickQ));
@@ -675,7 +700,7 @@ function addItem(tipo){
     const ja = L.itens.find(i=>i.tipo==="andaime"&&i.refId===a.id);
     const disp = andaimeDisp(a) - (ja?ja.qtd:0);
     if (q>disp){ L.erro=`Só há ${disp} peça(s) de "${a.descricao}" disponíveis.`; return render(); }
-    if (ja) ja.qtd += q; else L.itens.push({tipo, refId:a.id, tag:a.codigo||"", descricao:a.descricao, qtd:q, valorBase:num(a.valorUnitario), taxaMensal:num(a.taxaMensal), taxaAnual:num(a.taxaAnual), qtdDevolvida:0});
+    if (ja) ja.qtd += q; else L.itens.push({tipo, refId:a.id, tag:a.codigo||"", descricao:a.descricao, qtd:q, valorBase:num(a.valorUnitario), ...taxasCopia(a), qtdDevolvida:0});
     L.pickA=""; L.pickQ="";
   }
   render();
@@ -743,7 +768,7 @@ function vLocacoes(){
 function vDetalhe(l){
   const s = situacao(l), ac = acumulado(l);
   const dias = Math.max(0,daysBetween(l.dataSaida, l.previsaoRetorno));
-  const prevCusto = valorPeriodo(l) * dias / (l.modalidade==="anual"?365:30);
+  const prevCusto = valorPeriodo(l) * dias / mod(l.modalidade).dias;
   const pend = l.itens.map((it,idx)=>({it,idx})).filter(x=>outstanding(x.it)>0);
   if (!D.dev || D.dev.locId!==l.id) D.dev = {locId:l.id, data:todayISO(), qtds:{}, cond:"Em ordem", obs:"", erro:""};
   const V = D.dev;
@@ -755,16 +780,16 @@ function vDetalhe(l){
     <dl class="kv">
       <div><dt>Saída</dt><dd>${fmtD(l.dataSaida)}</dd></div>
       <div><dt>Previsão de retorno</dt><dd>${fmtD(l.previsaoRetorno)}</dd></div>
-      <div><dt>Modalidade</dt><dd>${l.modalidade==="anual"?"Anual":"Mensal"}</dd></div>
-      <div><dt>Valor por ${l.modalidade==="anual"?"ano":"mês"}</dt><dd>${brl(valorPeriodo(l))}</dd></div>
+      <div><dt>Modalidade</dt><dd>${mod(l.modalidade).nome}</dd></div>
+      <div><dt>Valor por ${mod(l.modalidade).per}</dt><dd>${brl(valorPeriodo(l))}</dd></div>
       <div><dt>Previsto no prazo</dt><dd>${brl(prevCusto)}</dd></div>
       <div><dt>${l.status==="encerrada"?"Total apurado":"Acumulado até hoje"}</dt><dd><b>${brl(ac)}</b></dd></div>
       <div><dt>Responsável</dt><dd>${esc(l.responsavel||"—")}</dd></div>
       ${l.dataEncerramento?`<div><dt>Encerrada em</dt><dd>${fmtD(l.dataEncerramento)}</dd></div>`:""}
     </dl>
   </section>
-  <section class="panel"><h2>Itens</h2><div class="tbl-wrap"><table><thead><tr><th>Item</th><th class="num">Saiu</th><th class="num">Devolvido</th><th class="num">Em campo</th><th class="num">Taxa</th><th class="num">Valor/${l.modalidade==="anual"?"ano":"mês"}</th></tr></thead><tbody>
-    ${l.itens.map(it=>`<tr><td>${it.tipo==="ferramenta"?`<span class="tag">${esc(it.tag)}</span> `:""}${esc(it.descricao)}</td><td class="num">${it.qtd}</td><td class="num">${it.qtdDevolvida||0}</td><td class="num"><b>${outstanding(it)}</b></td><td class="num">${pct(l.modalidade==="anual"?it.taxaAnual:it.taxaMensal)}</td><td class="num">${brl(valorItemPeriodo(it,l.modalidade))}</td></tr>`).join("")}
+  <section class="panel"><h2>Itens</h2><div class="tbl-wrap"><table><thead><tr><th>Item</th><th class="num">Saiu</th><th class="num">Devolvido</th><th class="num">Em campo</th><th class="num">Taxa</th><th class="num">Valor/${mod(l.modalidade).per}</th></tr></thead><tbody>
+    ${l.itens.map(it=>`<tr><td>${it.tipo==="ferramenta"?`<span class="tag">${esc(it.tag)}</span> `:""}${esc(it.descricao)}</td><td class="num">${it.qtd}</td><td class="num">${it.qtdDevolvida||0}</td><td class="num"><b>${outstanding(it)}</b></td><td class="num">${pct(taxaDe(it,l.modalidade))}</td><td class="num">${brl(valorItemPeriodo(it,l.modalidade))}</td></tr>`).join("")}
   </tbody></table></div></section>
   ${pend.length ? `<section class="panel"><h2>Registrar retorno</h2>
     <form id="f-dev" novalidate>
@@ -816,6 +841,9 @@ async function registrarDev(l){
 }
 
 /* ----- Equipamentos ----- */
+function celTaxas(r, base){
+  return `<span class="taxas-cel">${MOD_ORDEM.map(m=>{const M=MODS[m], t=num(r[M.k]); return `<span title="${M.nome}: ${brl(num(base)*t/100)} por ${M.per}">${pct(t)}</span>`;}).join('<i>·</i>')}</span>`;
+}
 function vEquip(){
   const F = D.fer, A = D.and, cfg = S.config;
   const ferLista = S.ferramentas.filter(f=>casa(BUSCA.fer, f.tag, f.descricao, f.categoria, f.manutencao?"manutencao":"", ferramentaLocada(f.id)?.numeroFmt||"")).sort((a,b)=>a.tag.localeCompare(b.tag,"pt-BR",{numeric:true}));
@@ -833,17 +861,17 @@ function vEquip(){
       </div>
       <div class="fields">
         <label class="f">Valor base (R$)<input id="fer-val" type="number" step="0.01" min="0" data-bind="fer.valorBase" value="${esc(F.valorBase)}"></label>
-        <label class="f">Taxa mensal (%)<input id="fer-tm" type="number" step="0.01" min="0" data-bind="fer.taxaMensal" value="${esc(F.taxaMensal)}" placeholder="${cfg.taxaMensalPadrao}"></label>
-        <label class="f">Taxa anual (%)<input id="fer-ta" type="number" step="0.01" min="0" data-bind="fer.taxaAnual" value="${esc(F.taxaAnual)}" placeholder="${cfg.taxaAnualPadrao}"></label>
         <label class="f" style="flex-direction:row;align-items:center;gap:8px;padding-top:20px"><input type="checkbox" id="fer-man" data-bind="fer.manutencao" ${F.manutencao?"checked":""} style="width:auto">Em manutenção</label>
       </div>
+      <div class="fields taxas">${camposTaxa("fer", F, cfg)}</div>
+      <p class="hint" style="margin:6px 0 0">Taxas em branco usam o padrão de Configurações.</p>
       ${F.erro?`<p class="err" role="alert">${esc(F.erro)}</p>`:""}
       <div class="row end">${F.id?`<button type="button" class="btn" data-act="fer-cancel">Cancelar</button>`:""}<button type="submit" class="btn primary">${F.id?"Salvar alterações":"Cadastrar ferramenta"}</button></div>
     </form>
     ${campoBusca("fer","Tag, descrição ou categoria", ferLista.length, S.ferramentas.length)}
-    <div class="tbl-wrap" style="margin-top:6px"><table><thead><tr><th>Tag</th><th>Descrição</th><th class="num">Valor base</th><th class="num">Mensal</th><th class="num">Anual</th><th>Situação</th><th></th></tr></thead><tbody>
+    <div class="tbl-wrap" style="margin-top:6px"><table><thead><tr><th>Tag</th><th>Descrição</th><th class="num">Valor base</th><th>Taxas (dia · sem · quinz · mês · ano)</th><th>Situação</th><th></th></tr></thead><tbody>
       ${ferLista.length ? ferLista.map(f=>{const loc=ferramentaLocada(f.id); const st = f.manutencao?`<span class="pill p-warn">Manutenção</span>`: loc?`<span class="pill p-neu">Locada · <span class="cnum" style="font-weight:600">${esc(loc.numeroFmt)}</span></span>`:`<span class="pill p-ok">Disponível</span>`;
-        return `<tr><td><span class="tag">${esc(f.tag)}</span></td><td>${esc(f.descricao)}${f.categoria?` <span class="muted">· ${esc(f.categoria)}</span>`:""}</td><td class="num">${brl(f.valorBase)}</td><td class="num">${pct(f.taxaMensal)}<div class="hint">${brl(num(f.valorBase)*num(f.taxaMensal)/100)}</div></td><td class="num">${pct(f.taxaAnual)}<div class="hint">${brl(num(f.valorBase)*num(f.taxaAnual)/100)}</div></td><td>${st}</td><td class="num"><button class="btn link sm" data-edit-fer="${f.id}">Editar</button></td></tr>`}).join("") : `<tr><td colspan="7" class="empty">${S.ferramentas.length?"Nenhuma ferramenta encontrada para essa busca.":"Nenhuma ferramenta cadastrada."}</td></tr>`}
+        return `<tr><td><span class="tag">${esc(f.tag)}</span></td><td>${esc(f.descricao)}${f.categoria?` <span class="muted">· ${esc(f.categoria)}</span>`:""}</td><td class="num">${brl(f.valorBase)}</td><td>${celTaxas(f, f.valorBase)}</td><td>${st}</td><td class="num"><button class="btn link sm" data-edit-fer="${f.id}">Editar</button></td></tr>`}).join("") : `<tr><td colspan="6" class="empty">${S.ferramentas.length?"Nenhuma ferramenta encontrada para essa busca.":"Nenhuma ferramenta cadastrada."}</td></tr>`}
     </tbody></table></div>
   </section>
   <section class="panel">
@@ -853,18 +881,16 @@ function vEquip(){
         <label class="f">Código<input id="and-cod" data-bind="and.codigo" value="${esc(A.codigo)}" placeholder="TUB-2M" class="mono"></label>
         <label class="f" style="grid-column:span 2">Descrição da peça<input id="and-desc" data-bind="and.descricao" value="${esc(A.descricao)}" placeholder="Tubo galvanizado 2,00 m"></label>
         <label class="f">Qtd. total em estoque<input id="and-qtd" type="number" step="1" min="0" data-bind="and.qtdTotal" value="${esc(A.qtdTotal)}"></label>
-      </div>
-      <div class="fields">
         <label class="f">Valor unitário (R$)<input id="and-val" type="number" step="0.01" min="0" data-bind="and.valorUnitario" value="${esc(A.valorUnitario)}"></label>
-        <label class="f">Taxa mensal (%)<input id="and-tm" type="number" step="0.01" min="0" data-bind="and.taxaMensal" value="${esc(A.taxaMensal)}" placeholder="${cfg.taxaMensalPadrao}"></label>
-        <label class="f">Taxa anual (%)<input id="and-ta" type="number" step="0.01" min="0" data-bind="and.taxaAnual" value="${esc(A.taxaAnual)}" placeholder="${cfg.taxaAnualPadrao}"></label>
       </div>
+      <div class="fields taxas">${camposTaxa("and", A, cfg)}</div>
+      <p class="hint" style="margin:6px 0 0">Taxas em branco usam o padrão de Configurações.</p>
       ${A.erro?`<p class="err" role="alert">${esc(A.erro)}</p>`:""}
       <div class="row end">${A.id?`<button type="button" class="btn" data-act="and-cancel">Cancelar</button>`:""}<button type="submit" class="btn primary">${A.id?"Salvar alterações":"Cadastrar tipo de peça"}</button></div>
     </form>
     ${campoBusca("and","Código ou descrição da peça", andLista.length, S.andaimes.length)}
-    <div class="tbl-wrap" style="margin-top:6px"><table><thead><tr><th>Código</th><th>Peça</th><th class="num">Valor un.</th><th class="num">Mensal/pç</th><th class="num">Anual/pç</th><th class="num">Total</th><th class="num">Em campo</th><th class="num">Disponível</th><th></th></tr></thead><tbody>
-      ${andLista.length ? andLista.map(a=>`<tr><td><span class="tag">${esc(a.codigo)}</span></td><td>${esc(a.descricao)}</td><td class="num">${brl(a.valorUnitario)}</td><td class="num">${pct(a.taxaMensal)}<div class="hint">${brl(num(a.valorUnitario)*num(a.taxaMensal)/100)}</div></td><td class="num">${pct(a.taxaAnual)}<div class="hint">${brl(num(a.valorUnitario)*num(a.taxaAnual)/100)}</div></td><td class="num">${a.qtdTotal||0}</td><td class="num">${andaimeEmUso(a.id)}</td><td class="num"><b>${andaimeDisp(a)}</b></td><td class="num"><button class="btn link sm" data-edit-and="${a.id}">Editar</button></td></tr>`).join("") : `<tr><td colspan="9" class="empty">${S.andaimes.length?"Nenhuma peça encontrada para essa busca.":"Nenhum tipo de peça cadastrado."}</td></tr>`}
+    <div class="tbl-wrap" style="margin-top:6px"><table><thead><tr><th>Código</th><th>Peça</th><th class="num">Valor un.</th><th>Taxas/pç (dia · sem · quinz · mês · ano)</th><th class="num">Total</th><th class="num">Em campo</th><th class="num">Disponível</th><th></th></tr></thead><tbody>
+      ${andLista.length ? andLista.map(a=>`<tr><td>${a.codigo?`<span class="tag">${esc(a.codigo)}</span>`:`<span class="muted">—</span>`}</td><td>${esc(a.descricao)}</td><td class="num">${brl(a.valorUnitario)}</td><td>${celTaxas(a, a.valorUnitario)}</td><td class="num">${a.qtdTotal||0}</td><td class="num">${andaimeEmUso(a.id)}</td><td class="num"><b>${andaimeDisp(a)}</b></td><td class="num"><button class="btn link sm" data-edit-and="${a.id}">Editar</button></td></tr>`).join("") : `<tr><td colspan="8" class="empty">${S.andaimes.length?"Nenhuma peça encontrada para essa busca.":"Nenhum tipo de peça cadastrado."}</td></tr>`}
     </tbody></table></div>
   </section>
   </div>`;
@@ -877,9 +903,9 @@ async function salvarFer(){
   if (num(F.valorBase)<=0) { F.erro="Informe o valor base da ferramenta."; return render(); }
   const id = F.id || uid();
   await put("ferramentas", id, {tag, descricao:F.descricao.trim(), categoria:F.categoria.trim(), valorBase:num(F.valorBase),
-    taxaMensal: F.taxaMensal===""?num(S.config.taxaMensalPadrao):num(F.taxaMensal), taxaAnual: F.taxaAnual===""?num(S.config.taxaAnualPadrao):num(F.taxaAnual), manutencao:!!F.manutencao});
+    ...taxasForm(F, S.config), manutencao:!!F.manutencao});
   toast(F.id?`Ferramenta ${tag} atualizada`:`Ferramenta ${tag} cadastrada`);
-  D.fer = {id:null,tag:"",descricao:"",categoria:"",valorBase:"",taxaMensal:"",taxaAnual:"",manutencao:false}; render();
+  D.fer = {id:null,tag:"",descricao:"",categoria:"",valorBase:"",...taxasVazias(),manutencao:false}; render();
 }
 async function salvarAnd(){
   const A = D.and; A.erro="";
@@ -889,9 +915,9 @@ async function salvarAnd(){
   if (num(A.valorUnitario)<=0) { A.erro="Informe o valor unitário da peça."; return render(); }
   const id = A.id || uid();
   await put("andaimes", id, {codigo:A.codigo.trim().toUpperCase(), descricao:A.descricao.trim(), valorUnitario:num(A.valorUnitario), qtdTotal:tot,
-    taxaMensal: A.taxaMensal===""?num(S.config.taxaMensalPadrao):num(A.taxaMensal), taxaAnual: A.taxaAnual===""?num(S.config.taxaAnualPadrao):num(A.taxaAnual)});
+    ...taxasForm(A, S.config)});
   toast(A.id?"Peça atualizada":"Tipo de peça cadastrado");
-  D.and = {id:null,codigo:"",descricao:"",valorUnitario:"",qtdTotal:"",taxaMensal:"",taxaAnual:""}; render();
+  D.and = {id:null,codigo:"",descricao:"",valorUnitario:"",qtdTotal:"",...taxasVazias()}; render();
 }
 
 /* ----- Clientes ----- */
@@ -950,12 +976,13 @@ function vConfig(){
     </section>
     <section class="panel stack"><h2 style="margin:0">Taxas e alertas</h2>
       <div class="fields">
-        <label class="f">Taxa mensal padrão (%)<input id="cfg-tm" type="number" step="0.01" data-bind="cfg.taxaMensalPadrao" value="${esc(G.taxaMensalPadrao)}"></label>
-        <label class="f">Taxa anual padrão (%)<input id="cfg-ta" type="number" step="0.01" data-bind="cfg.taxaAnualPadrao" value="${esc(G.taxaAnualPadrao)}"></label>
+${MOD_ORDEM.map(m=>{const M=MODS[m]; return `        <label class="f">Taxa ${M.adj} padrão (%)<input id="cfg-${m}" type="number" step="${M.step}" min="0" data-bind="cfg.${M.k}Padrao" value="${esc(G[M.k+"Padrao"])}"></label>`;}).join("\n")}
+      </div>
+      <div class="fields">
         <label class="f">Multa por atraso (% ao mês)<input id="cfg-multa" type="number" step="0.01" data-bind="cfg.multaAtraso" value="${esc(G.multaAtraso)}"></label>
         <label class="f">Alertar retorno com antecedência (dias)<input id="cfg-alerta" type="number" step="1" data-bind="cfg.alertaDias" value="${esc(G.alertaDias)}"></label>
       </div>
-      <p class="hint">Exemplo: equipamento de ${brl(10000)} com taxa mensal de ${pct(G.taxaMensalPadrao)} → ${brl(10000*num(G.taxaMensalPadrao)/100)}/mês; anual de ${pct(G.taxaAnualPadrao)} → ${brl(10000*num(G.taxaAnualPadrao)/100)}/ano (equivale a ${brl(10000*num(G.taxaAnualPadrao)/100/12)}/mês).</p>
+      <p class="hint">Exemplo: equipamento de ${brl(10000)} → ${MOD_ORDEM.map(m=>{const M=MODS[m]; return `${brl(10000*num(G[M.k+"Padrao"])/100)}/${M.per}`;}).join(" · ")}. As taxas padrão valem para novos cadastros com o campo em branco; cada equipamento pode ter a sua.</p>
     </section>
     <div class="row end"><span class="hint">Próximo contrato: Nº ${numFmt(Math.max(S.contador,maxNumero())+1,new Date().getFullYear())} · Template ${TEMPLATE_VERSAO}</span><button type="submit" class="btn primary">Salvar configurações</button></div>
   </form>
@@ -1000,6 +1027,7 @@ async function baixarBackup(btn){
 async function salvarCfg(){
   const G = D.cfg;
   await put("config","app",{razao:G.razao.trim(), cnpj:G.cnpj.trim(), endereco:G.endereco.trim(), cidade:G.cidade.trim(), foro:G.foro.trim(),
+    taxaDiariaPadrao:num(G.taxaDiariaPadrao), taxaSemanalPadrao:num(G.taxaSemanalPadrao), taxaQuinzenalPadrao:num(G.taxaQuinzenalPadrao),
     taxaMensalPadrao:num(G.taxaMensalPadrao), taxaAnualPadrao:num(G.taxaAnualPadrao), multaAtraso:num(G.multaAtraso), alertaDias:Math.max(0,Math.floor(num(G.alertaDias)))});
   toast("Configurações salvas");
 }
@@ -1008,7 +1036,7 @@ async function salvarCfg(){
 const extenso = n => `${n} dia${n===1?"":"s"}`;
 function contratoInner(l){
   const e = l.empresa || S.config, c = l.cliente || {};
-  const per = l.modalidade==="anual"?"anual":"mensal", perU = l.modalidade==="anual"?"ano":"mês";
+  const per = mod(l.modalidade).adj, perU = mod(l.modalidade).per;
   const ph = (v, t) => v ? esc(v) : `<span style="background:#ffe9a8">[${t}]</span>`;
   const dias = Math.max(0,daysBetween(l.dataSaida,l.previsaoRetorno));
   const total = valorPeriodo(l);
@@ -1022,14 +1050,14 @@ function contratoInner(l){
   <h4>Cláusula 1ª — Do objeto</h4>
   <p>A LOCADORA dá em locação à LOCATÁRIA os equipamentos abaixo relacionados, identificados por tag (ferramentas) ou por tipo e quantidade de peças (andaimes), para uso ${l.local?`no local: <b>${esc(l.local)}</b>`:"no local indicado pela LOCATÁRIA"}.</p>
   <table><thead><tr><th>Identificação</th><th>Descrição</th><th class="num">Qtd</th><th class="num">Valor base un.</th><th class="num">Taxa ${per}</th><th class="num">Valor/${perU}</th></tr></thead><tbody>
-  ${l.itens.map(it=>`<tr><td>${esc(it.tag||"—")}</td><td>${esc(it.descricao)}</td><td class="num">${it.qtd}</td><td class="num">${brl(it.valorBase)}</td><td class="num">${pct(l.modalidade==="anual"?it.taxaAnual:it.taxaMensal)}</td><td class="num">${brl(valorItemPeriodo(it,l.modalidade))}</td></tr>`).join("")}
+  ${l.itens.map(it=>`<tr><td>${esc(it.tag||"—")}</td><td>${esc(it.descricao)}</td><td class="num">${it.qtd}</td><td class="num">${brl(it.valorBase)}</td><td class="num">${pct(taxaDe(it,l.modalidade))}</td><td class="num">${brl(valorItemPeriodo(it,l.modalidade))}</td></tr>`).join("")}
   <tr><td colspan="5" style="text-align:right"><b>Total por ${perU}</b></td><td class="num"><b>${brl(total)}</b></td></tr>
   </tbody></table>
   <p>Parágrafo único. O valor base de cada item corresponde ao valor de reposição do bem e servirá de referência para indenização em caso de perda, furto, roubo ou dano irreparável.</p>
   <h4>Cláusula 2ª — Do prazo</h4>
   <p>A locação tem início em <b>${fmtD(l.dataSaida)}</b>, data da retirada dos equipamentos, com previsão de devolução em <b>${fmtD(l.previsaoRetorno)}</b>, totalizando ${extenso(dias)}. A permanência dos equipamentos após essa data prorroga a locação pelo mesmo regime de cobrança, sem prejuízo do disposto na Cláusula 6ª.</p>
   <h4>Cláusula 3ª — Do preço e da forma de cálculo</h4>
-  <p>Pela locação, a LOCATÁRIA pagará à LOCADORA o valor ${per} de <b>${brl(total)}</b>, calculado pela aplicação da taxa ${per} de locação sobre o valor base de cada item, multiplicada pela respectiva quantidade. Períodos incompletos serão cobrados proporcionalmente aos dias de efetiva posse, considerando-se ${l.modalidade==="anual"?"o ano de 365 dias":"o mês de 30 dias"}.</p>
+  <p>Pela locação, a LOCATÁRIA pagará à LOCADORA o valor ${per} de <b>${brl(total)}</b>, calculado pela aplicação da taxa ${per} de locação sobre o valor base de cada item, multiplicada pela respectiva quantidade. ${l.modalidade==="diaria" ? "A cobrança é feita por dia de efetiva posse dos equipamentos." : `Períodos incompletos serão cobrados proporcionalmente aos dias de efetiva posse, considerando-se ${{anual:"o ano de 365 dias", mensal:"o mês de 30 dias", quinzenal:"a quinzena de 15 dias", semanal:"a semana de 7 dias"}[l.modalidade]||"o mês de 30 dias"}.`}</p>
   <p>Parágrafo único. Devoluções parciais reduzem o valor devido a partir da data de retorno registrada pela LOCADORA para os itens devolvidos.</p>
   <h4>Cláusula 4ª — Da entrega e devolução</h4>
   <p>Os equipamentos são entregues em perfeito estado de conservação e funcionamento, conferidos na retirada${l.responsavel?` por <b>${esc(l.responsavel)}</b>, representante da LOCATÁRIA`:""}. A devolução deverá ocorrer no estabelecimento da LOCADORA, nas mesmas condições, ressalvado o desgaste natural pelo uso regular, sendo conferida por tag e por contagem de peças.</p>
@@ -1054,7 +1082,7 @@ function vContratos(){
   <div class="head"><div><h1>Contratos</h1><p class="sub">Todos os contratos emitidos. O PDF é gerado com os dados congelados no momento da emissão.</p></div>
   <label class="f" style="min-width:min(280px,100%)">Buscar<input id="busca-contrato" data-busca value="${esc(buscaContrato)}" placeholder="Nº do contrato ou cliente"></label></div>
   <section class="panel">${list.length ? `<div class="tbl-wrap"><table><thead><tr><th>Contrato</th><th>Cliente</th><th>Emissão</th><th>Modalidade</th><th class="num">Valor</th><th>Situação</th><th></th></tr></thead><tbody>
-    ${list.map(l=>{const s=situacao(l); return `<tr><td class="cnum">${esc(l.numeroFmt)}</td><td>${esc(clienteNome(l))}</td><td class="mono">${fmtD((l.criadoEm||l.dataSaida||"").slice(0,10))}</td><td>${l.modalidade==="anual"?"Anual":"Mensal"}</td><td class="num">${brl(valorPeriodo(l))}<span class="muted">/${l.modalidade==="anual"?"ano":"mês"}</span></td><td><span class="pill ${s.cls}">${s.txt}</span></td>
+    ${list.map(l=>{const s=situacao(l); return `<tr><td class="cnum">${esc(l.numeroFmt)}</td><td>${esc(clienteNome(l))}</td><td class="mono">${fmtD((l.criadoEm||l.dataSaida||"").slice(0,10))}</td><td>${mod(l.modalidade).nome}</td><td class="num">${brl(valorPeriodo(l))}<span class="muted">/${mod(l.modalidade).per}</span></td><td><span class="pill ${s.cls}">${s.txt}</span></td>
       <td class="num" style="white-space:nowrap"><button class="btn sm" data-contrato="${l.id}">Ver</button> <button class="btn sm primary" data-pdf="${l.id}">Baixar PDF</button></td></tr>`}).join("")}
   </tbody></table></div>` : `<p class="empty">${q?"Nenhum contrato encontrado para essa busca.":"Nenhum contrato emitido ainda."}</p>`}</section>`;
 }
@@ -1121,6 +1149,10 @@ document.addEventListener("input", e => {
     if (t.dataset.bind.startsWith("loc.") && ["loc.saida","loc.previsao"].includes(t.dataset.bind)){ const box = document.querySelector(".sum"); if (box) box.outerHTML = resumoHTML(D.loc); }
     if (t.dataset.bind.startsWith("cfg.taxa")) render();
   }
+  if (t.id==="loc-dias"){ const n = Math.max(0, Math.floor(num(t.value))); D.loc.previsao = addDays(D.loc.saida, n);
+    const pv = document.getElementById("loc-prev"); if (pv) pv.value = D.loc.previsao;
+    const box = document.querySelector(".sum"); if (box) box.outerHTML = resumoHTML(D.loc); }
+  if (t.id==="loc-saida" || t.id==="loc-prev"){ const dd = document.getElementById("loc-dias"); if (dd) dd.value = Math.max(0, daysBetween(D.loc.saida, D.loc.previsao)); }
   if (t.dataset.dev !== undefined && D.dev){ D.dev.qtds[t.dataset.dev] = t.type==="checkbox" ? t.checked : t.value; }
 });
 document.addEventListener("input", e => { const k = e.target.dataset && e.target.dataset.buscaLista; if (k){ BUSCA[k] = e.target.value; render(); } });
@@ -1152,14 +1184,14 @@ document.addEventListener("click", async e => {
   if (d.mod){ D.loc.modalidade=d.mod; return render(); }
   if (d.rm){ D.loc.itens.splice(+d.rm,1); return render(); }
   if (d.contrato){ const l=S.locacoes.find(x=>x.id===d.contrato); if(l) abrirContrato(l); return; }
-  if (d.editFer){ const f=S.ferramentas.find(x=>x.id===d.editFer); D.fer={...f, valorBase:String(f.valorBase), taxaMensal:String(f.taxaMensal), taxaAnual:String(f.taxaAnual), erro:""}; render(); document.getElementById("fer-tag")?.scrollIntoView({block:"center"}); return; }
-  if (d.editAnd){ const a=S.andaimes.find(x=>x.id===d.editAnd); D.and={...a, valorUnitario:String(a.valorUnitario), qtdTotal:String(a.qtdTotal), taxaMensal:String(a.taxaMensal), taxaAnual:String(a.taxaAnual), erro:""}; render(); document.getElementById("and-cod")?.scrollIntoView({block:"center"}); return; }
+  if (d.editFer){ const f=S.ferramentas.find(x=>x.id===d.editFer); D.fer={...f, valorBase:String(f.valorBase), ...taxasTexto(f), erro:""}; render(); document.getElementById("fer-tag")?.scrollIntoView({block:"center"}); return; }
+  if (d.editAnd){ const a=S.andaimes.find(x=>x.id===d.editAnd); D.and={...a, valorUnitario:String(a.valorUnitario), qtdTotal:String(a.qtdTotal), ...taxasTexto(a), erro:""}; render(); document.getElementById("and-cod")?.scrollIntoView({block:"center"}); return; }
   if (d.editCli){ const c=S.clientes.find(x=>x.id===d.editCli); D.cli={id:c.id,nome:c.nome||"",doc:c.doc||"",endereco:c.endereco||"",contato:c.contato||"",telefone:c.telefone||"",email:c.email||"",erro:""}; render(); window.scrollTo(0,0); return; }
   switch(d.act){
     case "add-f": return addItem("ferramenta");
     case "add-a": return addItem("andaime");
-    case "fer-cancel": D.fer={id:null,tag:"",descricao:"",categoria:"",valorBase:"",taxaMensal:"",taxaAnual:"",manutencao:false}; return render();
-    case "and-cancel": D.and={id:null,codigo:"",descricao:"",valorUnitario:"",qtdTotal:"",taxaMensal:"",taxaAnual:""}; return render();
+    case "fer-cancel": D.fer={id:null,tag:"",descricao:"",categoria:"",valorBase:"",...taxasVazias(),manutencao:false}; return render();
+    case "and-cancel": D.and={id:null,codigo:"",descricao:"",valorUnitario:"",qtdTotal:"",...taxasVazias()}; return render();
     case "cli-cancel": D.cli={id:null,nome:"",doc:"",endereco:"",contato:"",telefone:"",email:""}; return render();
     case "dev-all": { const l=S.locacoes.find(x=>x.id===sel.loc); if(!l) return; l.itens.forEach((it,idx)=>{ if(outstanding(it)>0) D.dev.qtds[idx] = it.tipo==="ferramenta" ? true : String(outstanding(it)); }); return render(); }
     case "backup": return baixarBackup(b);
