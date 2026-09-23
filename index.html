@@ -194,10 +194,12 @@ body.no-nav aside.nav{display:none}
 <script>
 /* =========================================================
    WR Locações — protótipo de controle de locação
-   APP_VERSION 1.2.0 · template de contrato v1
+   APP_VERSION 1.2.1 · template de contrato v1
    ========================================================= */
-const APP_VERSION = "1.2.0";
+const APP_VERSION = "1.2.1";
 const VERSOES = [
+  {v:"1.2.1", data:"2026-09-23", itens:[
+    "Recuperação de senha: além de clicar no link do e-mail, agora é possível copiar o link e colá-lo no sistema para criar a nova senha."]},
   {v:"1.2.0", data:"2026-09-23", itens:[
     "Cópia de segurança: botão em Configurações baixa todos os dados do sistema em um arquivo (.json).",
     "Sistema preparado para operar no plano gratuito do Supabase (banco mantido ativo diariamente)."]},
@@ -400,24 +402,46 @@ function applySession(){
 }
 
 /* ---------- login ---------- */
+// Aceita o link do e-mail de recuperação (…/auth/v1/verify?token=…&type=recovery) ou a página
+// para onde ele redirecionou (…#access_token=…&refresh_token=…). Não depende da URL de retorno do Supabase.
+async function entrarPorLink(txt){
+  let u; try{ u = new URL(String(txt||"").trim()); }catch(e){ throw new Error("Cole o link completo do e-mail."); }
+  const h = new URLSearchParams(u.hash.replace(/^#/, ""));
+  const q = u.searchParams;
+  if (h.get("error_description")) throw new Error("Este link já foi usado ou expirou. Peça um novo e-mail.");
+  authView = "nova-senha";
+  try{
+    let r;
+    if (h.get("access_token") && h.get("refresh_token")){
+      r = await sb.auth.setSession({access_token:h.get("access_token"), refresh_token:h.get("refresh_token")});
+    } else if (q.get("token_hash") || q.get("token")){
+      r = await sb.auth.verifyOtp({token_hash:q.get("token_hash")||q.get("token"), type:q.get("type")||"recovery"});
+    } else throw new Error("Este não parece ser o link do e-mail de recuperação.");
+    if (r.error) throw new Error(/expired|invalid|not found/i.test(r.error.message) ? "Este link já foi usado ou expirou. Peça um novo e-mail." : r.error.message);
+    session = r.data.session;
+  }catch(e){ authView = "colar-link"; throw e; }
+}
 let authView = "login", authMsg = "", authErr = "", authBusy = false;
-const A = {email:"", senha:"", senha2:""};
+const A = {email:"", senha:"", senha2:"", link:""};
 function vAuth(){
-  const t = {login:"Entrar", recuperar:"Recuperar senha", "nova-senha":"Definir nova senha"}[authView];
+  const t = {login:"Entrar", recuperar:"Recuperar senha", "colar-link":"Colar link do e-mail", "nova-senha":"Definir nova senha"}[authView];
   return `<div class="auth"><div class="auth-card">
     <div class="auth-brand">WR <b>LOCAÇÕES</b></div>
     <h1>${t}</h1>
     ${authMsg?`<p class="auth-ok">${esc(authMsg)}</p>`:""}
     <form id="f-auth" novalidate>
-      ${authView!=="nova-senha"?`<label class="f">E-mail<input id="au-email" type="email" autocomplete="username" data-bind="auth.email" value="${esc(A.email)}"></label>`:""}
+      ${authView==="colar-link"?`<p class="hint" style="margin-top:0">No e-mail de recuperação, clique com o botão direito no link e escolha <b>Copiar endereço do link</b> (no celular, toque e segure). Cole abaixo. Se você já clicou e caiu numa página que não abre, copie o endereço completo dessa página e cole aqui.</p>
+        <label class="f">Link do e-mail<input id="au-link" type="url" autocomplete="off" data-bind="auth.link" value="${esc(A.link)}"></label>`:""}
+      ${authView==="login"||authView==="recuperar"?`<label class="f">E-mail<input id="au-email" type="email" autocomplete="username" data-bind="auth.email" value="${esc(A.email)}"></label>`:""}
       ${authView==="login"?`<label class="f">Senha<input id="au-senha" type="password" autocomplete="current-password" data-bind="auth.senha" value="${esc(A.senha)}"></label>`:""}
       ${authView==="nova-senha"?`<label class="f">Nova senha<input id="au-senha" type="password" autocomplete="new-password" data-bind="auth.senha" value="${esc(A.senha)}"></label>
         <label class="f">Repita a nova senha<input id="au-senha2" type="password" autocomplete="new-password" data-bind="auth.senha2" value="${esc(A.senha2)}"></label>`:""}
       ${authErr?`<p class="err" role="alert">${esc(authErr)}</p>`:""}
-      <button type="submit" class="btn primary" style="justify-content:center" ${authBusy?"disabled":""}>${authBusy?"Aguarde…":{login:"Entrar",recuperar:"Enviar link de recuperação","nova-senha":"Salvar nova senha"}[authView]}</button>
+      <button type="submit" class="btn primary" style="justify-content:center" ${authBusy?"disabled":""}>${authBusy?"Aguarde…":{login:"Entrar",recuperar:"Enviar link de recuperação","colar-link":"Continuar","nova-senha":"Salvar nova senha"}[authView]}</button>
     </form>
     ${authView==="login"?`<button class="btn link" data-auth="recuperar">Esqueci minha senha</button>`:""}
-    ${authView==="recuperar"?`<button class="btn link" data-auth="login">← Voltar para o login</button>`:""}
+    ${authView==="recuperar"?`<button class="btn link" data-auth="colar-link">Já recebi o e-mail</button>`:""}
+    ${authView==="recuperar"||authView==="colar-link"?`<button class="btn link" data-auth="login">← Voltar para o login</button>`:""}
     ${authView==="nova-senha" && session?`<button class="btn link" data-auth-cancel>← Voltar ao sistema</button>`:""}
     <p class="hint">Acesso restrito à equipe WR Locações. Novos usuários são cadastrados pelo administrador.</p>
   </div></div>`;
@@ -435,7 +459,10 @@ async function submitAuth(){
       if (!A.email) throw new Error("Informe o e-mail cadastrado.");
       const { error } = await sb.auth.resetPasswordForEmail(A.email.trim(), {redirectTo: location.origin + location.pathname});
       if (error) throw error;
-      authMsg = "Se o e-mail estiver cadastrado, você receberá um link para criar uma nova senha."; authView = "login";
+      authMsg = "Se o e-mail estiver cadastrado, você receberá um link. Copie o link do e-mail e cole abaixo (ou clique nele)."; authView = "colar-link";
+    } else if (authView==="colar-link"){
+      await entrarPorLink(A.link);
+      A.link = "";
     } else {
       if ((A.senha||"").length < 8) throw new Error("A senha precisa ter pelo menos 8 caracteres.");
       if (A.senha !== A.senha2) throw new Error("As senhas não conferem.");
