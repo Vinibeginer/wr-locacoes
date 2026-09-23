@@ -1,0 +1,1121 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>WR Locações</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#EEF0EE; --surface:#FFFFFF; --surface-2:#F6F7F5; --line:#D5D9D6; --line-strong:#B7BDB9;
+  --ink:#1A2023; --ink-2:#4C565B; --ink-3:#7A8489;
+  --accent:#C4531A; --accent-ink:#FFFFFF; --accent-soft:#F7E4D8;
+  --steel:#3E5563;
+  --ok:#2E7D4F; --ok-soft:#DDEFE3; --warn:#A86A00; --warn-soft:#F7EACB; --bad:#B3261E; --bad-soft:#F6DAD7;
+  --shadow:0 1px 2px rgba(20,30,35,.06),0 4px 16px rgba(20,30,35,.06);
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --ground:#121618; --surface:#1B2023; --surface-2:#20262A; --line:#2E363A; --line-strong:#434C51;
+  --ink:#E7EBEC; --ink-2:#AAB3B7; --ink-3:#7D878C;
+  --accent:#E87438; --accent-ink:#1A1206; --accent-soft:#3A2418;
+  --steel:#8FB0C2;
+  --ok:#6BC48F; --ok-soft:#183425; --warn:#E3B04B; --warn-soft:#3A2E12; --bad:#F08279; --bad-soft:#3D1D1B;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#121618; --surface:#1B2023; --surface-2:#20262A; --line:#2E363A; --line-strong:#434C51;
+  --ink:#E7EBEC; --ink-2:#AAB3B7; --ink-3:#7D878C;
+  --accent:#E87438; --accent-ink:#1A1206; --accent-soft:#3A2418;
+  --steel:#8FB0C2;
+  --ok:#6BC48F; --ok-soft:#183425; --warn:#E3B04B; --warn-soft:#3A2E12; --bad:#F08279; --bad-soft:#3D1D1B;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+html{color-scheme:light}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+body{background:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+aside.nav{background:var(--steel);color:#fff;padding:20px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:env(safe-area-inset-top,0px);height:100vh}
+:root[data-theme="dark"] aside.nav{background:#0D1113}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) aside.nav{background:#0D1113}}
+.brand{font-family:var(--f-display);font-weight:700;font-size:26px;letter-spacing:.02em;line-height:1;padding:4px 10px 18px;display:flex;flex-direction:column;gap:4px}
+.brand small{font-family:var(--f-mono);font-weight:400;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;opacity:.7}
+.brand b{color:#F39A63}
+.nav button{all:unset;cursor:pointer;padding:9px 12px;border-radius:6px;font-weight:500;color:rgba(255,255,255,.82);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.nav button:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav button[aria-current="page"]{background:rgba(255,255,255,.14);color:#fff;box-shadow:inset 3px 0 0 #F39A63}
+.nav button:focus-visible{outline:2px solid #F39A63;outline-offset:1px}
+.nav .count{font-family:var(--f-mono);font-size:11px;background:rgba(255,255,255,.16);padding:1px 7px;border-radius:10px}
+.nav .count.alert{background:#E0533F;color:#fff}
+.nav .spacer{flex:1}
+.conn{font-size:11.5px;color:rgba(255,255,255,.7);padding:8px 12px;display:flex;gap:8px;align-items:center}
+.conn i{width:8px;height:8px;border-radius:50%;background:#9aa;display:inline-block;flex:none}
+.conn.db i{background:#6BD48F}.conn.local i{background:#F2B544}
+main{padding-block:28px 60px;padding-inline:clamp(16px,3vw,40px);min-width:0}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+h1{font-family:var(--f-display);font-weight:600;font-size:34px;line-height:1.05;margin:0;letter-spacing:.01em;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:600;font-size:21px;margin:0 0 12px;letter-spacing:.02em}
+h3{font-size:13px;font-weight:600;margin:0;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2)}
+.sub{color:var(--ink-2);margin:6px 0 0;max-width:62ch}
+.banner{background:var(--warn-soft);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:13px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
+.stack{display:flex;flex-direction:column;gap:18px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:18px;align-items:start}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:18px}
+.kpi{background:var(--surface);padding:14px 16px;display:flex;flex-direction:column;gap:2px}
+.kpi .v{font-family:var(--f-display);font-size:clamp(20px,1.9vw,28px);white-space:nowrap;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:12px;color:var(--ink-2)}
+.kpi.alert .v{color:var(--bad)}
+.tbl-wrap{overflow-x:auto;margin:0 -2px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line-strong);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr.click{cursor:pointer}tr.click:hover td{background:var(--surface-2)}
+td.num,th.num{text-align:right}
+.mono{font-family:var(--f-mono);font-size:12.5px}
+.tag{font-family:var(--f-mono);font-size:12px;font-weight:500;background:var(--surface-2);border:1px solid var(--line-strong);border-radius:4px;padding:1px 6px;white-space:nowrap}
+.cnum{font-family:var(--f-mono);font-weight:500;color:var(--accent);white-space:nowrap}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.p-ok{background:var(--ok-soft);color:var(--ok)}.p-warn{background:var(--warn-soft);color:var(--warn)}.p-bad{background:var(--bad-soft);color:var(--bad)}.p-neu{background:var(--surface-2);color:var(--ink-2)}
+.muted{color:var(--ink-3)}
+.empty{color:var(--ink-3);padding:18px 4px;text-align:center}
+form{display:flex;flex-direction:column;gap:14px}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:500;color:var(--ink-2)}
+input,select,textarea{background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;padding:8px 10px;min-width:0;width:100%}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:6px;overflow:hidden}
+.seg button{all:unset;cursor:pointer;padding:7px 14px;font-weight:500;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.seg button:focus-visible{outline:2px solid var(--accent)}
+.btn{cursor:pointer;border:1px solid var(--line-strong);background:var(--surface);border-radius:6px;padding:8px 14px;font-weight:500;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.sm{padding:4px 10px;font-size:12.5px}
+.btn.link{border:none;background:none;color:var(--accent);padding:4px 6px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row.end{justify-content:flex-end}
+.adder{display:grid;grid-template-columns:minmax(0,1fr) 90px auto;gap:8px;align-items:end}
+.adder.two{grid-template-columns:minmax(0,1fr) auto}
+.hint{font-size:12px;color:var(--ink-3)}
+.err{font-size:12.5px;color:var(--bad);font-weight:500}
+.sum{display:flex;flex-direction:column;gap:6px;font-variant-numeric:tabular-nums}
+.sum .l{display:flex;justify-content:space-between;gap:10px}
+.sum .total{border-top:1px solid var(--line-strong);padding-top:8px;margin-top:4px;font-weight:600;font-size:15px}
+.sum .total .v{font-family:var(--f-display);font-size:24px;color:var(--accent)}
+.next-num{font-family:var(--f-mono);font-size:12px;color:var(--ink-2);background:var(--surface-2);border:1px dashed var(--line-strong);border-radius:6px;padding:8px 10px}
+.next-num b{color:var(--accent)}
+.list-att{display:flex;flex-direction:column}
+.list-att .it{display:flex;justify-content:space-between;gap:12px;padding:10px 2px;border-bottom:1px solid var(--line);align-items:center;cursor:pointer}
+.list-att .it:last-child{border-bottom:none}
+.list-att .it:hover{background:var(--surface-2)}
+.bar{height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden;min-width:60px}
+.bar i{display:block;height:100%;background:var(--steel)}
+.detail-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start}
+dl.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px 18px;margin:14px 0 0}
+dl.kv dt{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:600}
+dl.kv dd{margin:2px 0 0;font-variant-numeric:tabular-nums}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:8px;font-weight:500;box-shadow:var(--shadow);z-index:50;max-width:calc(100vw - 32px)}
+.changes{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:4px;max-width:75ch}
+.paper.pdf{box-shadow:none;border-radius:0;max-width:none;width:700px;padding:0;margin:0;background:#fff;font-size:13px}
+/* login */
+body.no-nav .app{grid-template-columns:1fr}
+body.no-nav aside.nav{display:none}
+.auth{min-height:80vh;display:grid;place-items:center}
+.auth-card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:28px 24px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow)}
+.auth-brand{font-family:var(--f-display);font-weight:700;font-size:24px;color:var(--steel);letter-spacing:.02em}
+.auth-brand b{color:var(--accent)}
+.auth h1{font-size:28px}
+.auth-ok{background:var(--ok-soft);color:var(--ok);padding:8px 10px;border-radius:6px;font-size:13px;margin:0}
+/* contrato */
+.overlay{position:fixed;inset:0;background:rgba(10,14,16,.55);z-index:40;overflow-y:auto;padding:calc(20px + env(safe-area-inset-top,0px)) 16px calc(40px + env(safe-area-inset-bottom,0px))}
+.doc-bar{max-width:800px;margin:0 auto 12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+.doc-bar .t{color:#fff;font-family:var(--f-display);font-size:20px;font-weight:600}
+.paper{max-width:800px;margin:0 auto;background:#FFFFFE;color:#1b1b1b;padding:clamp(22px,5vw,56px);border-radius:4px;font-family:Georgia,"Times New Roman",serif;font-size:14.5px;line-height:1.6;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.paper h1{font-family:Georgia,serif;font-size:18px;text-align:center;letter-spacing:.04em;text-transform:uppercase;margin:0}
+.paper .n{text-align:center;font-family:var(--f-mono);font-size:13px;margin:6px 0 22px;color:#333}
+.paper h4{font-size:14px;margin:18px 0 6px;text-transform:uppercase;letter-spacing:.04em}
+.paper p{margin:0 0 8px;text-align:justify}
+.paper table{font-family:var(--f-body);font-size:12.5px;margin:8px 0 10px}
+.paper th{color:#555;border-bottom:1px solid #999}
+.paper td{border-bottom:1px solid #ddd}
+.paper .sign{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:50px;text-align:center;font-size:13px}
+.paper .sign div{border-top:1px solid #333;padding-top:6px}
+.paper .foot{margin-top:30px;font-family:var(--f-mono);font-size:10.5px;color:#777;text-align:center}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr}
+  aside.nav{position:sticky;top:env(safe-area-inset-top,0px);height:auto;flex-direction:row;overflow-x:auto;padding:10px 12px;gap:2px;z-index:20;align-items:center}
+  .brand{padding:0 10px 0 2px;font-size:20px;flex:none}.brand small{display:none}
+  .nav button{flex:none;padding:7px 10px}
+  .nav button[aria-current="page"]{box-shadow:inset 0 -3px 0 #F39A63}
+  .nav .spacer,.conn span{display:none}
+  .conn{padding:0 6px}
+  .grid2{grid-template-columns:1fr}
+  .paper .sign{grid-template-columns:1fr}
+}
+@media (max-width:480px){.adder{grid-template-columns:1fr 80px}.adder .btn{grid-column:1/-1}}
+@media (prefers-reduced-motion:no-preference){.toast{animation:up .2s ease-out}@keyframes up{from{opacity:0;transform:translate(-50%,8px)}}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="nav" id="nav"></aside>
+  <main id="main"></main>
+</div>
+<div id="overlay-root"></div>
+<div id="toast-root"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js" defer></script>
+<script>
+  // Projeto Supabase "wr-locacoes". A chave abaixo é a publishable (pública por natureza);
+  // os dados são protegidos pelo login + lista da equipe no banco. Nunca coloque aqui a chave secret/service_role.
+  window.WR_CONFIG = {
+    supabaseUrl: "https://gxpvvlfmaadiiqktirlj.supabase.co",
+    supabaseAnonKey: "sb_publishable_a7Q-3VPi6AE38vpKtCNMyg_Zwtxivzr"
+  };
+</script>
+<script>
+/* =========================================================
+   WR Locações — protótipo de controle de locação
+   APP_VERSION 1.2.0 · template de contrato v1
+   ========================================================= */
+const APP_VERSION = "1.2.0";
+const VERSOES = [
+  {v:"1.2.0", data:"2026-09-23", itens:[
+    "Cópia de segurança: botão em Configurações baixa todos os dados do sistema em um arquivo (.json).",
+    "Sistema preparado para operar no plano gratuito do Supabase (banco mantido ativo diariamente)."]},
+  {v:"1.1.0", data:"2026-09-23", itens:[
+    "Nova tela Contratos: todos os contratos emitidos, com busca por número ou cliente.",
+    "Download do contrato em PDF (A4) direto da lista, do detalhe da locação ou da visualização.",
+    "Página Atualizações com o histórico de versões do sistema.",
+    "Aviso automático quando uma nova versão do sistema é publicada."]},
+  {v:"1.0.0", data:"2026-09-23", itens:[
+    "Sistema online com login e banco de dados no Supabase.",
+    "Acesso restrito à equipe cadastrada; troca de senha pelo próprio sistema.",
+    "Numeração sequencial de contratos garantida pelo banco, sem números repetidos ou pulados.",
+    "Registro de saída e retorno (parcial ou total) com trilha de auditoria."]},
+  {v:"0.1.0", data:"2026-09-23", itens:[
+    "Protótipo: ferramentas por tag, andaimes por número de peças, taxa mensal/anual em % e contrato numerado."]}
+];
+const TEMPLATE_VERSAO = "CT-LOC v1";
+const DEFAULT_CFG = {
+  razao:"WR LOCAÇÕES", cnpj:"", endereco:"", cidade:"", foro:"",
+  taxaMensalPadrao:8, taxaAnualPadrao:72, alertaDias:7, multaAtraso:2
+};
+
+const S = { mode:"loading", clientes:[], ferramentas:[], andaimes:[], locacoes:[], config:{...DEFAULT_CFG}, contador:0 };
+
+/* ---------- utilidades ---------- */
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const BRL = new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
+const brl = v => BRL.format(+v || 0);
+const pct = v => (+v||0).toLocaleString("pt-BR",{maximumFractionDigits:2}) + "%";
+const num = v => { if (v === "" || v == null) return 0; const n = +String(v).replace(",", "."); return isFinite(n) ? n : 0; };
+const todayISO = () => { const d = new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
+const addDays = (iso,n) => { const d = new Date(iso+"T12:00:00"); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
+const daysBetween = (a,b) => Math.round((new Date(b+"T12:00:00") - new Date(a+"T12:00:00"))/86400000);
+const fmtD = iso => iso ? iso.split("-").reverse().join("/") : "—";
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)));
+const numFmt = (n, ano) => String(n).padStart(4,"0") + "/" + ano;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function toast(msg){ const t = document.createElement("div"); t.className="toast"; t.textContent = msg; $("#toast-root").replaceChildren(t); setTimeout(()=>t.remove(), 3200); }
+function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+function lsSet(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+
+/* ---------- regras de negócio ---------- */
+function outstanding(it){ return (it.qtd||0) - (it.qtdDevolvida||0); }
+function locAtiva(l){ return l.status === "ativa"; }
+function ferramentaLocada(id){
+  return S.locacoes.find(l => locAtiva(l) && l.itens.some(it => it.tipo==="ferramenta" && it.refId===id && outstanding(it)>0));
+}
+function andaimeEmUso(id){
+  return S.locacoes.filter(locAtiva).reduce((s,l)=> s + l.itens.filter(it=>it.tipo==="andaime" && it.refId===id).reduce((a,it)=>a+outstanding(it),0), 0);
+}
+function andaimeDisp(a){ return (a.qtdTotal||0) - andaimeEmUso(a.id); }
+/* valor do período contratado (mensal ou anual) */
+function valorItemPeriodo(it, modalidade){
+  const taxa = modalidade==="anual" ? it.taxaAnual : it.taxaMensal;
+  return (it.valorBase||0) * (it.qtd||0) * (taxa||0) / 100;
+}
+function valorPeriodo(l){ return l.itens.reduce((s,it)=>s+valorItemPeriodo(it,l.modalidade),0); }
+/* custo acumulado pró-rata, considerando devoluções parciais ao longo do tempo */
+function acumulado(l, ateISO){
+  const fim = l.status==="encerrada" && l.dataEncerramento ? l.dataEncerramento : (ateISO || todayISO());
+  const base = l.modalidade==="anual" ? 365 : 30;
+  let total = 0;
+  l.itens.forEach((it, idx) => {
+    const diaria = (it.valorBase||0) * ((l.modalidade==="anual"?it.taxaAnual:it.taxaMensal)||0)/100/base;
+    const evs = (l.devolucoes||[]).map(d => ({data:d.data, q:(d.itens||[]).filter(x=>x.idx===idx).reduce((a,x)=>a+x.qtd,0)})).filter(e=>e.q>0).sort((a,b)=>a.data<b.data?-1:1);
+    let q = it.qtd, cur = l.dataSaida;
+    for (const e of evs){ const d = Math.max(0, daysBetween(cur, e.data < fim ? e.data : fim)); total += q*d*diaria; q -= e.q; cur = e.data < fim ? e.data : fim; }
+    total += q * Math.max(0, daysBetween(cur, fim)) * diaria;
+  });
+  return total;
+}
+function situacao(l){
+  if (l.status==="encerrada") return {cls:"p-neu", txt:"Encerrada"};
+  const d = daysBetween(todayISO(), l.previsaoRetorno);
+  if (d < 0) return {cls:"p-bad", txt:`Atrasada ${-d}d`, atraso:-d};
+  if (d <= (S.config.alertaDias||7)) return {cls:"p-warn", txt: d===0?"Retorno hoje":`Retorno em ${d}d`};
+  return {cls:"p-ok", txt:"Em locação"};
+}
+function clienteNome(l){ return l.cliente?.nome || (S.clientes.find(c=>c.id===l.clienteId)?.nome) || "—"; }
+function resumoItens(l){
+  const f = l.itens.filter(i=>i.tipo==="ferramenta").length;
+  const p = l.itens.filter(i=>i.tipo==="andaime").reduce((a,i)=>a+i.qtd,0);
+  return [f?`${f} ferram.`:"", p?`${p} peças`:""].filter(Boolean).join(" · ");
+}
+function maxNumero(){ return S.locacoes.reduce((m,l)=>Math.max(m,l.numero||0),0); }
+
+/* ---------- persistência: Supabase (ou memória local se config.js estiver vazio) ---------- */
+const CFG = window.WR_CONFIG || {};
+const sb = (CFG.supabaseUrl && CFG.supabaseAnonKey && window.supabase)
+  ? window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey) : null;
+let session = null, channel = null, reloadTimer = null;
+
+const toDb = {
+  clientes: r => ({nome:r.nome, doc:r.doc, endereco:r.endereco, contato:r.contato, telefone:r.telefone, email:r.email}),
+  ferramentas: r => ({tag:r.tag, descricao:r.descricao, categoria:r.categoria, valor_base:r.valorBase, taxa_mensal:r.taxaMensal, taxa_anual:r.taxaAnual, manutencao:r.manutencao}),
+  andaimes: r => ({codigo:r.codigo, descricao:r.descricao, valor_unitario:r.valorUnitario, qtd_total:r.qtdTotal, taxa_mensal:r.taxaMensal, taxa_anual:r.taxaAnual})
+};
+const fromDb = {
+  clientes: r => ({id:r.id, nome:r.nome, doc:r.doc, endereco:r.endereco, contato:r.contato, telefone:r.telefone, email:r.email}),
+  ferramentas: r => ({id:r.id, tag:r.tag, descricao:r.descricao, categoria:r.categoria, valorBase:+r.valor_base, taxaMensal:+r.taxa_mensal, taxaAnual:+r.taxa_anual, manutencao:!!r.manutencao}),
+  andaimes: r => ({id:r.id, codigo:r.codigo, descricao:r.descricao, valorUnitario:+r.valor_unitario, qtdTotal:r.qtd_total, taxaMensal:+r.taxa_mensal, taxaAnual:+r.taxa_anual})
+};
+function mapLoc(r){
+  return {
+    id:r.id, numero:r.numero, numeroFmt:r.numero_fmt, status:r.status, modalidade:r.modalidade,
+    clienteId:r.cliente_id, cliente:r.cliente, local:r.local, responsavel:r.responsavel,
+    dataSaida:r.data_saida, previsaoRetorno:r.previsao_retorno, dataEncerramento:r.data_encerramento,
+    empresa:r.empresa, multaAtraso:+r.multa_atraso, templateVersao:r.template_versao, appVersao:r.app_versao, criadoEm:r.created_at,
+    itens:(r.locacao_itens||[]).sort((a,b)=>a.idx-b.idx).map(i=>({tipo:i.tipo, refId:i.ref_id, tag:i.tag, descricao:i.descricao, qtd:i.qtd, qtdDevolvida:i.qtd_devolvida, valorBase:+i.valor_base, taxaMensal:+i.taxa_mensal, taxaAnual:+i.taxa_anual})),
+    devolucoes:(r.devolucoes||[]).sort((a,b)=>a.data<b.data?-1:a.data>b.data?1:(a.created_at<b.created_at?-1:1)).map(d=>({data:d.data, itens:d.itens||[], cond:d.cond, obs:d.obs}))
+  };
+}
+function mapCfg(c){
+  return c ? {razao:c.razao, cnpj:c.cnpj, endereco:c.endereco, cidade:c.cidade, foro:c.foro,
+    taxaMensalPadrao:+c.taxa_mensal_padrao, taxaAnualPadrao:+c.taxa_anual_padrao, multaAtraso:+c.multa_atraso, alertaDias:c.alerta_dias} : {...DEFAULT_CFG};
+}
+function friendly(e){
+  const m = (e && (e.message || e.error_description)) || "";
+  if (/duplicate key.*tag/i.test(m)) return "Essa tag já está cadastrada.";
+  if (/JWT|not authenticated|permission denied/i.test(m)) return "Sua sessão expirou. Entre de novo.";
+  if (/Failed to fetch|NetworkError/i.test(m)) return "Sem conexão com o servidor. Verifique a internet e tente de novo.";
+  return m || "Não foi possível salvar. Tente de novo.";
+}
+async function loadAll(){
+  if (!sb || !session) return;
+  const eq = await sb.rpc("eh_equipe");
+  if (!eq.error && eq.data === false){
+    S.mode = "db"; S.loadErr = "Seu usuário não tem acesso liberado. Peça ao administrador para incluir seu e-mail na equipe.";
+    S.clientes=[]; S.ferramentas=[]; S.andaimes=[]; S.locacoes=[]; render(); return;
+  }
+  const [c,f,a,l,g,n] = await Promise.all([
+    sb.from("clientes").select("*"),
+    sb.from("ferramentas").select("*"),
+    sb.from("andaimes").select("*").order("created_at"),
+    sb.from("locacoes").select("*, locacao_itens(*), devolucoes(*)").order("numero",{ascending:false}),
+    sb.from("config").select("*").eq("id",1).maybeSingle(),
+    sb.from("contador_contrato").select("ultimo").eq("id",1).maybeSingle()
+  ]);
+  const bad = [c,f,a,l,g,n].find(r=>r.error);
+  if (bad){ console.error(bad.error); S.loadErr = friendly(bad.error); render(); return; }
+  S.loadErr = "";
+  S.clientes = c.data.map(fromDb.clientes);
+  S.ferramentas = f.data.map(fromDb.ferramentas);
+  S.andaimes = a.data.map(fromDb.andaimes);
+  S.locacoes = l.data.map(mapLoc);
+  S.config = mapCfg(g.data);
+  S.contador = n.data ? n.data.ultimo : 0;
+  if (authView !== "nova-senha") S.mode = "db";
+  render();
+}
+function scheduleReload(){ clearTimeout(reloadTimer); reloadTimer = setTimeout(loadAll, 350); }
+
+async function put(col, id, data){
+  if (!sb){
+    if (col==="config"){ S.config = {...DEFAULT_CFG, ...data}; }
+    else { const arr = S[col]; const i = arr.findIndex(x=>x.id===id); const rec = {...data, id}; if(i>=0) arr[i]=rec; else arr.push(rec); }
+    render(); return;
+  }
+  let res;
+  if (col==="config"){
+    res = await sb.from("config").update({razao:data.razao, cnpj:data.cnpj, endereco:data.endereco, cidade:data.cidade, foro:data.foro,
+      taxa_mensal_padrao:data.taxaMensalPadrao, taxa_anual_padrao:data.taxaAnualPadrao, multa_atraso:data.multaAtraso, alerta_dias:data.alertaDias,
+      updated_at:new Date().toISOString()}).eq("id",1);
+  } else if (S[col].some(x=>x.id===id)) {
+    res = await sb.from(col).update(toDb[col](data)).eq("id", id);
+  } else {
+    res = await sb.from(col).insert({id, ...toDb[col](data)});
+  }
+  if (res.error) throw new Error(friendly(res.error));
+  await loadAll();
+}
+function proximoNumeroLocal(){ const n = Math.max(S.contador, maxNumero()) + 1; S.contador = n; return n; }
+function strip(o){ const {id, ...rest} = o; return rest; }
+
+async function boot(){
+  if (!sb){ S.mode = "local"; render(); return; }
+  S.mode = "loading"; render();
+  const { data } = await sb.auth.getSession();
+  session = data.session;
+  if (/type=recovery/.test(location.hash)) authView = "nova-senha";
+  sb.auth.onAuthStateChange((ev, s) => {
+    session = s;
+    if (ev === "PASSWORD_RECOVERY") authView = "nova-senha";
+    setTimeout(applySession, 0);
+  });
+  applySession();
+}
+function applySession(){
+  if (session && authView !== "nova-senha"){
+    if (!channel){
+      channel = sb.channel("wr-mudancas").on("postgres_changes", {event:"*", schema:"public"}, scheduleReload).subscribe();
+    }
+    loadAll();
+  } else {
+    if (channel){ sb.removeChannel(channel); channel = null; }
+    S.mode = "auth"; S.clientes=[]; S.ferramentas=[]; S.andaimes=[]; S.locacoes=[];
+    render();
+  }
+}
+
+/* ---------- login ---------- */
+let authView = "login", authMsg = "", authErr = "", authBusy = false;
+const A = {email:"", senha:"", senha2:""};
+function vAuth(){
+  const t = {login:"Entrar", recuperar:"Recuperar senha", "nova-senha":"Definir nova senha"}[authView];
+  return `<div class="auth"><div class="auth-card">
+    <div class="auth-brand">WR <b>LOCAÇÕES</b></div>
+    <h1>${t}</h1>
+    ${authMsg?`<p class="auth-ok">${esc(authMsg)}</p>`:""}
+    <form id="f-auth" novalidate>
+      ${authView!=="nova-senha"?`<label class="f">E-mail<input id="au-email" type="email" autocomplete="username" data-bind="auth.email" value="${esc(A.email)}"></label>`:""}
+      ${authView==="login"?`<label class="f">Senha<input id="au-senha" type="password" autocomplete="current-password" data-bind="auth.senha" value="${esc(A.senha)}"></label>`:""}
+      ${authView==="nova-senha"?`<label class="f">Nova senha<input id="au-senha" type="password" autocomplete="new-password" data-bind="auth.senha" value="${esc(A.senha)}"></label>
+        <label class="f">Repita a nova senha<input id="au-senha2" type="password" autocomplete="new-password" data-bind="auth.senha2" value="${esc(A.senha2)}"></label>`:""}
+      ${authErr?`<p class="err" role="alert">${esc(authErr)}</p>`:""}
+      <button type="submit" class="btn primary" style="justify-content:center" ${authBusy?"disabled":""}>${authBusy?"Aguarde…":{login:"Entrar",recuperar:"Enviar link de recuperação","nova-senha":"Salvar nova senha"}[authView]}</button>
+    </form>
+    ${authView==="login"?`<button class="btn link" data-auth="recuperar">Esqueci minha senha</button>`:""}
+    ${authView==="recuperar"?`<button class="btn link" data-auth="login">← Voltar para o login</button>`:""}
+    ${authView==="nova-senha" && session?`<button class="btn link" data-auth-cancel>← Voltar ao sistema</button>`:""}
+    <p class="hint">Acesso restrito à equipe WR Locações. Novos usuários são cadastrados pelo administrador.</p>
+  </div></div>`;
+}
+async function submitAuth(){
+  authErr = ""; authMsg = "";
+  try{
+    authBusy = true; render();
+    if (authView==="login"){
+      if (!A.email || !A.senha) throw new Error("Informe e-mail e senha.");
+      const { error } = await sb.auth.signInWithPassword({email:A.email.trim(), password:A.senha});
+      if (error) throw new Error(/invalid/i.test(error.message) ? "E-mail ou senha incorretos." : error.message);
+      A.senha = "";
+    } else if (authView==="recuperar"){
+      if (!A.email) throw new Error("Informe o e-mail cadastrado.");
+      const { error } = await sb.auth.resetPasswordForEmail(A.email.trim(), {redirectTo: location.origin + location.pathname});
+      if (error) throw error;
+      authMsg = "Se o e-mail estiver cadastrado, você receberá um link para criar uma nova senha."; authView = "login";
+    } else {
+      if ((A.senha||"").length < 8) throw new Error("A senha precisa ter pelo menos 8 caracteres.");
+      if (A.senha !== A.senha2) throw new Error("As senhas não conferem.");
+      const { error } = await sb.auth.updateUser({password:A.senha});
+      if (error) throw error;
+      A.senha = A.senha2 = ""; authView = "login"; history.replaceState(null, "", location.pathname);
+      toast("Senha atualizada"); applySession();
+    }
+  }catch(e){ authErr = e.message || "Não foi possível concluir. Tente de novo."; }
+  authBusy = false; render();
+}
+
+/* ---------- estado de tela ---------- */
+const TABS = [["painel","Painel"],["nova","Nova locação"],["locacoes","Locações"],["contratos","Contratos"],["equip","Equipamentos"],["clientes","Clientes"],["config","Configurações"],["atualizacoes","Atualizações"]];
+let view = (location.hash||"").slice(1) || lsGet("wr.view") || "painel";
+if (!TABS.some(t=>t[0]===view)) view = "painel";
+let sel = { loc:null, filtro:"ativas" };
+const newLoc = () => ({clienteId:"", local:"", responsavel:"", saida:todayISO(), previsao:addDays(todayISO(),30), modalidade:"mensal", itens:[], pickF:"", pickA:"", pickQ:"", erro:"", busy:false});
+const D = {
+  loc: newLoc(),
+  cli: {id:null,nome:"",doc:"",endereco:"",contato:"",telefone:"",email:""},
+  fer: {id:null,tag:"",descricao:"",categoria:"",valorBase:"",taxaMensal:"",taxaAnual:"",manutencao:false},
+  and: {id:null,codigo:"",descricao:"",valorUnitario:"",qtdTotal:"",taxaMensal:"",taxaAnual:""},
+  cfg: null,
+  dev: null
+};
+function go(v, opts={}){ view = v; if (opts.loc!==undefined) sel.loc = opts.loc; else if (v!=="locacoes") sel.loc=null; lsSet("wr.view", v); if (v==="config") D.cfg = {...S.config}; render(); window.scrollTo(0,0); }
+
+/* ---------- render ---------- */
+function render(){
+  const ae = document.activeElement, fid = ae && ae.id, ss = ae && ae.selectionStart, se = ae && ae.selectionEnd;
+  const semApp = S.mode==="auth" || S.mode==="loading";
+  document.body.classList.toggle("no-nav", semApp);
+  $("#nav").innerHTML = semApp ? "" : navHTML();
+  if (S.mode==="loading") $("#main").innerHTML = `<p class="empty" style="padding-top:30vh">Carregando…</p>`;
+  else if (S.mode==="auth") $("#main").innerHTML = vAuth();
+  else $("#main").innerHTML = ({painel:vPainel, nova:vNova, locacoes:vLocacoes, equip:vEquip, clientes:vClientes, config:vConfig, contratos:vContratos, atualizacoes:vAtualizacoes}[view])();
+  if (fid){ const el = document.getElementById(fid); if (el){ el.focus({preventScroll:true}); try{ if(ss!=null) el.setSelectionRange(ss,se); }catch(e){} } }
+}
+function navHTML(){
+  const ativas = S.locacoes.filter(locAtiva);
+  const atras = ativas.filter(l=>situacao(l).atraso).length;
+  const connTxt = S.mode==="db" ? esc(session?.user?.email || "Conectado") : "Demonstração local";
+  return `<div class="brand">WR <b>LOCAÇÕES</b><small>Controle · v${APP_VERSION}</small></div>` +
+    TABS.map(([k,l]) => {
+      let badge = "";
+      if (k==="locacoes" && ativas.length) badge = `<span class="count ${atras?"alert":""}">${atras?atras+" atras.":ativas.length}</span>`;
+      return `<button data-go="${k}" ${view===k?'aria-current="page"':""}>${l}${badge}</button>`;
+    }).join("") +
+    `<div class="spacer"></div><div class="conn ${S.mode}"><i></i><span>${connTxt}</span></div>${S.mode==="db"?`<button data-auth="nova-senha">Alterar senha</button><button data-sair>Sair</button>`:""}`;
+}
+const bannerVersao = () => novaVersao ? `<div class="banner" style="background:var(--ok-soft)"><b>Nova versão ${esc(novaVersao)} disponível.</b> <button class="btn sm" data-recarregar>Atualizar agora</button></div>` : "";
+const banner = () => bannerVersao() + (S.mode==="local" ? `<div class="banner"><b>Demonstração local:</b> o Supabase ainda não foi configurado no arquivo config.js. O fluxo funciona, mas nada fica salvo ao recarregar.</div>` : S.loadErr ? `<div class="banner" style="background:var(--bad-soft)"><b>Erro ao carregar dados:</b> ${esc(S.loadErr)}</div>` : "");
+
+/* ----- Painel ----- */
+function vPainel(){
+  const ativas = S.locacoes.filter(locAtiva);
+  const receitaMes = ativas.reduce((s,l)=> s + (l.modalidade==="anual" ? valorPeriodo(l)/12 : valorPeriodo(l)), 0);
+  const atras = ativas.filter(l=>situacao(l).atraso);
+  const ferLoc = S.ferramentas.filter(f=>ferramentaLocada(f.id)).length;
+  const pecasUso = S.andaimes.reduce((s,a)=>s+andaimeEmUso(a.id),0);
+  const pecasTot = S.andaimes.reduce((s,a)=>s+(a.qtdTotal||0),0);
+  const atencao = ativas.map(l=>({l, s:situacao(l)})).filter(x=>x.s.cls!=="p-ok").sort((a,b)=>a.l.previsaoRetorno<b.l.previsaoRetorno?-1:1);
+  const recentes = [...S.locacoes].sort((a,b)=>(b.numero||0)-(a.numero||0)).slice(0,6);
+  return `${banner()}
+  <div class="head"><div><h1>Painel</h1><p class="sub">Situação dos equipamentos em campo e dos contratos em aberto em ${fmtD(todayISO())}.</p></div>
+  <button class="btn primary" data-go="nova">+ Nova locação</button></div>
+  <div class="kpis">
+    <div class="kpi"><span class="v">${ativas.length}</span><span class="l">Locações ativas</span></div>
+    <div class="kpi"><span class="v">${brl(receitaMes)}</span><span class="l">Receita mensal contratada</span></div>
+    <div class="kpi ${atras.length?"alert":""}"><span class="v">${atras.length}</span><span class="l">Devoluções em atraso</span></div>
+    <div class="kpi"><span class="v">${ferLoc}<span class="muted" style="font-size:18px"> / ${S.ferramentas.length}</span></span><span class="l">Ferramentas locadas</span></div>
+    <div class="kpi"><span class="v">${pecasUso}<span class="muted" style="font-size:18px"> / ${pecasTot}</span></span><span class="l">Peças de andaime em campo</span></div>
+  </div>
+  <div class="grid2">
+    <section class="panel"><h2>Últimos contratos</h2>${recentes.length ? tabelaLoc(recentes, true) : `<p class="empty">Nenhuma locação registrada ainda.</p>`}</section>
+    <section class="panel"><h2>Requer atenção</h2>
+      ${atencao.length ? `<div class="list-att">${atencao.map(({l,s})=>`<div class="it" data-open="${l.id}" tabindex="0"><div><span class="cnum">Nº ${esc(l.numeroFmt)}</span><div>${esc(clienteNome(l))}</div><div class="hint">Previsão ${fmtD(l.previsaoRetorno)}</div></div><span class="pill ${s.cls}">${s.txt}</span></div>`).join("")}</div>`
+      : `<p class="empty">Nada vencendo nos próximos ${S.config.alertaDias} dias.</p>`}
+      <h3 style="margin-top:18px;margin-bottom:8px">Estoque de andaimes</h3>
+      ${S.andaimes.length ? `<div class="tbl-wrap"><table><tbody>${S.andaimes.map(a=>{const u=andaimeEmUso(a.id), t=a.qtdTotal||0; return `<tr><td>${esc(a.descricao)}</td><td style="width:35%"><div class="bar"><i style="width:${t?Math.min(100,u/t*100):0}%"></i></div></td><td class="num mono">${u}/${t}</td></tr>`}).join("")}</tbody></table></div>` : `<p class="hint">Cadastre os tipos de peça em Equipamentos.</p>`}
+    </section>
+  </div>`;
+}
+function tabelaLoc(list, compact){
+  return `<div class="tbl-wrap"><table><thead><tr><th>Contrato</th><th>Cliente</th>${compact?"":"<th>Saída</th>"}<th>Previsão</th>${compact?"":"<th>Itens</th>"}<th class="num">Valor</th><th>Situação</th></tr></thead><tbody>
+  ${list.map(l=>{const s=situacao(l); return `<tr class="click" data-open="${l.id}" tabindex="0"><td class="cnum">${esc(l.numeroFmt)}</td><td>${esc(clienteNome(l))}</td>${compact?"":`<td class="mono">${fmtD(l.dataSaida)}</td>`}<td class="mono">${fmtD(l.previsaoRetorno)}</td>${compact?"":`<td class="muted">${resumoItens(l)}</td>`}<td class="num">${brl(valorPeriodo(l))}<span class="muted">/${l.modalidade==="anual"?"ano":"mês"}</span></td><td><span class="pill ${s.cls}">${s.txt}</span></td></tr>`}).join("")}
+  </tbody></table></div>`;
+}
+
+/* ----- Nova locação ----- */
+function vNova(){
+  const L = D.loc;
+  const ferDisp = S.ferramentas.filter(f=>!f.manutencao && !ferramentaLocada(f.id) && !L.itens.some(i=>i.tipo==="ferramenta"&&i.refId===f.id)).sort((a,b)=>a.tag<b.tag?-1:1);
+  const proximo = numFmt(Math.max(S.contador, maxNumero())+1, new Date(L.saida+"T12:00:00").getFullYear() || new Date().getFullYear());
+  return `${banner()}
+  <div class="head"><div><h1>Nova locação</h1><p class="sub">Registra a saída dos equipamentos e gera o contrato com o próximo número da sequência.</p></div></div>
+  <form id="f-loc" class="grid2" novalidate>
+    <div class="stack">
+      <section class="panel stack">
+        <h2 style="margin:0">Cliente e prazo</h2>
+        <div class="fields">
+          <label class="f">Cliente (locatário)
+            <select id="loc-cli" data-bind="loc.clienteId"><option value="">Selecione…</option>${S.clientes.slice().sort((a,b)=>a.nome<b.nome?-1:1).map(c=>`<option value="${c.id}" ${L.clienteId===c.id?"selected":""}>${esc(c.nome)}</option>`).join("")}</select>
+          </label>
+          <label class="f">Obra / local de uso<input id="loc-local" data-bind="loc.local" value="${esc(L.local)}" placeholder="Ex.: Obra Av. Pelinca, 120"></label>
+          <label class="f">Responsável pela retirada<input id="loc-resp" data-bind="loc.responsavel" value="${esc(L.responsavel)}"></label>
+        </div>
+        <div class="fields">
+          <label class="f">Data de saída<input type="date" id="loc-saida" data-bind="loc.saida" value="${L.saida}"></label>
+          <label class="f">Previsão de retorno<input type="date" id="loc-prev" data-bind="loc.previsao" value="${L.previsao}"></label>
+          <div class="f" style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:500;color:var(--ink-2)">Modalidade da taxa
+            <div class="seg" role="group" aria-label="Modalidade"><button type="button" data-mod="mensal" aria-pressed="${L.modalidade==="mensal"}">Mensal</button><button type="button" data-mod="anual" aria-pressed="${L.modalidade==="anual"}">Anual</button></div>
+          </div>
+        </div>
+      </section>
+      <section class="panel stack">
+        <h2 style="margin:0">Equipamentos</h2>
+        <div>
+          <h3 style="margin-bottom:6px">Ferramenta por tag</h3>
+          <div class="adder two">
+            <select id="pick-f" data-bind="loc.pickF"><option value="">${ferDisp.length?"Selecione a tag…":"Nenhuma ferramenta disponível"}</option>${ferDisp.map(f=>`<option value="${f.id}" ${L.pickF===f.id?"selected":""}>${esc(f.tag)} — ${esc(f.descricao)}</option>`).join("")}</select>
+            <button type="button" class="btn" data-act="add-f">Adicionar</button>
+          </div>
+        </div>
+        <div>
+          <h3 style="margin-bottom:6px">Andaime por número de peças</h3>
+          <div class="adder">
+            <select id="pick-a" data-bind="loc.pickA"><option value="">Tipo de peça…</option>${S.andaimes.map(a=>{const disp=andaimeDisp(a)-L.itens.filter(i=>i.tipo==="andaime"&&i.refId===a.id).reduce((s,i)=>s+i.qtd,0); return `<option value="${a.id}" ${L.pickA===a.id?"selected":""} ${disp<=0?"disabled":""}>${esc(a.descricao)} (${disp} disp.)</option>`}).join("")}</select>
+            <input id="pick-q" type="number" min="1" step="1" inputmode="numeric" placeholder="Qtd" data-bind="loc.pickQ" value="${esc(L.pickQ)}">
+            <button type="button" class="btn" data-act="add-a">Adicionar</button>
+          </div>
+        </div>
+        ${L.itens.length ? `<div class="tbl-wrap"><table><thead><tr><th>Item</th><th class="num">Qtd</th><th class="num">Valor base</th><th class="num">Taxa</th><th class="num">Valor/${L.modalidade==="anual"?"ano":"mês"}</th><th></th></tr></thead><tbody>
+          ${L.itens.map((it,i)=>`<tr><td>${it.tipo==="ferramenta"?`<span class="tag">${esc(it.tag)}</span> `:""}${esc(it.descricao)}</td><td class="num">${it.qtd}</td><td class="num">${brl(it.valorBase)}</td><td class="num">${pct(L.modalidade==="anual"?it.taxaAnual:it.taxaMensal)}</td><td class="num">${brl(valorItemPeriodo(it,L.modalidade))}</td><td class="num"><button type="button" class="btn link sm" data-rm="${i}" aria-label="Remover">Remover</button></td></tr>`).join("")}
+        </tbody></table></div>` : `<p class="hint">Nenhum item adicionado.</p>`}
+      </section>
+    </div>
+    <aside class="panel stack" style="position:sticky;top:calc(16px + env(safe-area-inset-top,0px))">
+      <h2 style="margin:0">Resumo</h2>
+      <div class="next-num">Contrato a emitir: <b>Nº ${proximo}</b><br><span class="hint">O número é reservado no momento do registro.</span></div>
+      ${resumoHTML(L)}
+      ${L.erro?`<p class="err" role="alert">${esc(L.erro)}</p>`:""}
+      <button type="submit" class="btn primary" ${L.busy?"disabled":""} style="justify-content:center">${L.busy?"Registrando…":"Registrar saída e gerar contrato"}</button>
+      <p class="hint">Taxa aplicada sobre o valor base de cada item. Mensal: cobrança por mês; anual: por ano de contrato. Devoluções antecipadas ou atrasos são calculados pró-rata.</p>
+    </aside>
+  </form>`;
+}
+function resumoHTML(L){
+  const per = L.modalidade==="anual"?"ano":"mês";
+  const total = L.itens.reduce((s,it)=>s+valorItemPeriodo(it,L.modalidade),0);
+  const dias = Math.max(0, daysBetween(L.saida, L.previsao));
+  const prev = total * dias / (L.modalidade==="anual"?365:30);
+  const f = L.itens.filter(i=>i.tipo==="ferramenta").length, p = L.itens.filter(i=>i.tipo==="andaime").reduce((a,i)=>a+i.qtd,0);
+  return `<div class="sum">
+    <div class="l"><span>Ferramentas</span><span>${f}</span></div>
+    <div class="l"><span>Peças de andaime</span><span>${p}</span></div>
+    <div class="l"><span>Prazo previsto</span><span>${dias} dias</span></div>
+    <div class="l"><span>Valor previsto no prazo</span><span>${brl(prev)}</span></div>
+    <div class="l total"><span>Valor por ${per}</span><span class="v">${brl(total)}</span></div>
+  </div>`;
+}
+function addItem(tipo){
+  const L = D.loc; L.erro="";
+  if (tipo==="ferramenta"){
+    const f = S.ferramentas.find(x=>x.id===L.pickF); if(!f){ L.erro="Selecione uma ferramenta pela tag."; return render(); }
+    L.itens.push({tipo, refId:f.id, tag:f.tag, descricao:f.descricao, qtd:1, valorBase:num(f.valorBase), taxaMensal:num(f.taxaMensal), taxaAnual:num(f.taxaAnual), qtdDevolvida:0});
+    L.pickF="";
+  } else {
+    const a = S.andaimes.find(x=>x.id===L.pickA), q = Math.floor(num(L.pickQ));
+    if(!a){ L.erro="Selecione o tipo de peça."; return render(); }
+    if(q<=0){ L.erro="Informe a quantidade de peças."; return render(); }
+    const ja = L.itens.find(i=>i.tipo==="andaime"&&i.refId===a.id);
+    const disp = andaimeDisp(a) - (ja?ja.qtd:0);
+    if (q>disp){ L.erro=`Só há ${disp} peça(s) de "${a.descricao}" disponíveis.`; return render(); }
+    if (ja) ja.qtd += q; else L.itens.push({tipo, refId:a.id, tag:a.codigo||"", descricao:a.descricao, qtd:q, valorBase:num(a.valorUnitario), taxaMensal:num(a.taxaMensal), taxaAnual:num(a.taxaAnual), qtdDevolvida:0});
+    L.pickA=""; L.pickQ="";
+  }
+  render();
+}
+async function registrar(){
+  const L = D.loc; L.erro="";
+  const cli = S.clientes.find(c=>c.id===L.clienteId);
+  if(!cli) L.erro="Selecione o cliente.";
+  else if(!L.itens.length) L.erro="Adicione ao menos um equipamento.";
+  else if(!L.saida || !L.previsao || L.previsao<L.saida) L.erro="A previsão de retorno deve ser igual ou posterior à data de saída.";
+  else {
+    // revalida disponibilidade com os dados mais recentes
+    for (const it of L.itens){
+      if (it.tipo==="ferramenta" && ferramentaLocada(it.refId)){ L.erro=`A ferramenta ${it.tag} acabou de ser locada em outro contrato.`; break; }
+      if (it.tipo==="andaime"){ const a=S.andaimes.find(x=>x.id===it.refId); if(a && it.qtd>andaimeDisp(a)){ L.erro=`Estoque de "${a.descricao}" mudou: só há ${andaimeDisp(a)} peça(s).`; break; } }
+    }
+  }
+  if (L.erro) return render();
+  L.busy = true; render();
+  try{
+    if (sb){
+      const { data, error } = await sb.rpc("registrar_locacao", {p:{
+        cliente_id:cli.id, modalidade:L.modalidade, local:L.local, responsavel:L.responsavel,
+        data_saida:L.saida, previsao_retorno:L.previsao, app_versao:APP_VERSION,
+        itens:L.itens.map(it=>({tipo:it.tipo, ref_id:it.refId, qtd:it.qtd}))}});
+      if (error) throw new Error(friendly(error));
+      await loadAll();
+      const rec = S.locacoes.find(x=>x.id===data.id);
+      D.loc = newLoc();
+      toast(`Contrato Nº ${data.numero_fmt} registrado`);
+      go("locacoes",{loc:data.id});
+      if (rec) abrirContrato(rec);
+      return;
+    }
+    const n = proximoNumeroLocal();
+    const ano = new Date(L.saida+"T12:00:00").getFullYear();
+    const id = "c" + String(n).padStart(5,"0");
+    const rec = {
+      numero:n, numeroFmt:numFmt(n,ano), status:"ativa", modalidade:L.modalidade,
+      clienteId:cli.id, cliente:{nome:cli.nome, doc:cli.doc||"", endereco:cli.endereco||"", contato:cli.contato||"", telefone:cli.telefone||"", email:cli.email||""},
+      local:L.local, responsavel:L.responsavel, dataSaida:L.saida, previsaoRetorno:L.previsao,
+      itens:L.itens.map(it=>({...it})), devolucoes:[],
+      empresa:{razao:S.config.razao, cnpj:S.config.cnpj, endereco:S.config.endereco, cidade:S.config.cidade, foro:S.config.foro},
+      multaAtraso:num(S.config.multaAtraso), templateVersao:TEMPLATE_VERSAO, appVersao:APP_VERSION, criadoEm:new Date().toISOString()
+    };
+    await put("locacoes", id, rec);
+    D.loc = newLoc();
+    toast(`Contrato Nº ${rec.numeroFmt} registrado`);
+    go("locacoes",{loc:id});
+    abrirContrato({...rec, id});
+  }catch(e){ L.busy=false; L.erro = e.message || "Não foi possível registrar. Tente de novo."; render(); }
+}
+
+/* ----- Locações ----- */
+function vLocacoes(){
+  if (sel.loc){ const l = S.locacoes.find(x=>x.id===sel.loc); if (l) return vDetalhe(l); }
+  const f = sel.filtro;
+  const list = S.locacoes.filter(l => f==="todas" ? true : f==="ativas" ? locAtiva(l) : !locAtiva(l)).sort((a,b)=>(b.numero||0)-(a.numero||0));
+  return `${banner()}
+  <div class="head"><div><h1>Locações</h1><p class="sub">Todos os contratos emitidos, em ordem de numeração.</p></div>
+  <div class="seg" role="group" aria-label="Filtro">${[["ativas","Ativas"],["encerradas","Encerradas"],["todas","Todas"]].map(([k,t])=>`<button type="button" data-filtro="${k}" aria-pressed="${f===k}">${t}</button>`).join("")}</div></div>
+  <section class="panel">${list.length ? tabelaLoc(list) : `<p class="empty">Nenhuma locação neste filtro.</p>`}</section>`;
+}
+function vDetalhe(l){
+  const s = situacao(l), ac = acumulado(l);
+  const dias = Math.max(0,daysBetween(l.dataSaida, l.previsaoRetorno));
+  const prevCusto = valorPeriodo(l) * dias / (l.modalidade==="anual"?365:30);
+  const pend = l.itens.map((it,idx)=>({it,idx})).filter(x=>outstanding(x.it)>0);
+  if (!D.dev || D.dev.locId!==l.id) D.dev = {locId:l.id, data:todayISO(), qtds:{}, cond:"Em ordem", obs:"", erro:""};
+  const V = D.dev;
+  return `${banner()}
+  <div class="head"><div><button class="btn link" data-back style="padding-left:0">← Locações</button><h1>Contrato Nº <span class="cnum" style="font-family:var(--f-display)">${esc(l.numeroFmt)}</span></h1><p class="sub">${esc(clienteNome(l))}${l.local?" · "+esc(l.local):""}</p></div>
+  <div class="row"><span class="pill ${s.cls}">${s.txt}</span><button class="btn" data-contrato="${l.id}">Ver contrato</button><button class="btn primary" data-pdf="${l.id}">Baixar PDF</button></div></div>
+  <div class="stack">
+  <section class="panel">
+    <dl class="kv">
+      <div><dt>Saída</dt><dd>${fmtD(l.dataSaida)}</dd></div>
+      <div><dt>Previsão de retorno</dt><dd>${fmtD(l.previsaoRetorno)}</dd></div>
+      <div><dt>Modalidade</dt><dd>${l.modalidade==="anual"?"Anual":"Mensal"}</dd></div>
+      <div><dt>Valor por ${l.modalidade==="anual"?"ano":"mês"}</dt><dd>${brl(valorPeriodo(l))}</dd></div>
+      <div><dt>Previsto no prazo</dt><dd>${brl(prevCusto)}</dd></div>
+      <div><dt>${l.status==="encerrada"?"Total apurado":"Acumulado até hoje"}</dt><dd><b>${brl(ac)}</b></dd></div>
+      <div><dt>Responsável</dt><dd>${esc(l.responsavel||"—")}</dd></div>
+      ${l.dataEncerramento?`<div><dt>Encerrada em</dt><dd>${fmtD(l.dataEncerramento)}</dd></div>`:""}
+    </dl>
+  </section>
+  <section class="panel"><h2>Itens</h2><div class="tbl-wrap"><table><thead><tr><th>Item</th><th class="num">Saiu</th><th class="num">Devolvido</th><th class="num">Em campo</th><th class="num">Taxa</th><th class="num">Valor/${l.modalidade==="anual"?"ano":"mês"}</th></tr></thead><tbody>
+    ${l.itens.map(it=>`<tr><td>${it.tipo==="ferramenta"?`<span class="tag">${esc(it.tag)}</span> `:""}${esc(it.descricao)}</td><td class="num">${it.qtd}</td><td class="num">${it.qtdDevolvida||0}</td><td class="num"><b>${outstanding(it)}</b></td><td class="num">${pct(l.modalidade==="anual"?it.taxaAnual:it.taxaMensal)}</td><td class="num">${brl(valorItemPeriodo(it,l.modalidade))}</td></tr>`).join("")}
+  </tbody></table></div></section>
+  ${pend.length ? `<section class="panel"><h2>Registrar retorno</h2>
+    <form id="f-dev" novalidate>
+      <div class="tbl-wrap"><table><thead><tr><th>Item</th><th class="num">Em campo</th><th class="num" style="width:120px">Retornando</th></tr></thead><tbody>
+      ${pend.map(({it,idx})=>`<tr><td>${it.tipo==="ferramenta"?`<span class="tag">${esc(it.tag)}</span> `:""}${esc(it.descricao)}</td><td class="num">${outstanding(it)}</td><td class="num">${it.tipo==="ferramenta"
+        ? `<input type="checkbox" id="dev-${idx}" data-dev="${idx}" ${V.qtds[idx]?"checked":""} style="width:auto" aria-label="Retornou">`
+        : `<input type="number" id="dev-${idx}" data-dev="${idx}" min="0" max="${outstanding(it)}" step="1" inputmode="numeric" value="${V.qtds[idx]??""}" style="text-align:right">`}</td></tr>`).join("")}
+      </tbody></table></div>
+      <div class="row"><button type="button" class="btn sm" data-act="dev-all">Marcar tudo</button></div>
+      <div class="fields">
+        <label class="f">Data do retorno<input type="date" id="dev-data" data-bind="dev.data" value="${V.data}"></label>
+        <label class="f">Condição<select id="dev-cond" data-bind="dev.cond">${["Em ordem","Com avaria","Faltando peças"].map(o=>`<option ${V.cond===o?"selected":""}>${o}</option>`).join("")}</select></label>
+        <label class="f">Observação<input id="dev-obs" data-bind="dev.obs" value="${esc(V.obs)}" placeholder="Ex.: 2 braçadeiras com rosca danificada"></label>
+      </div>
+      ${V.erro?`<p class="err" role="alert">${esc(V.erro)}</p>`:""}
+      <div class="row end"><button type="submit" class="btn primary">Registrar retorno</button></div>
+    </form></section>` : ""}
+  ${(l.devolucoes||[]).length ? `<section class="panel"><h2>Histórico de retornos</h2><div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Itens</th><th>Condição</th><th>Obs.</th></tr></thead><tbody>
+    ${l.devolucoes.map(d=>`<tr><td class="mono">${fmtD(d.data)}</td><td>${d.itens.map(x=>{const it=l.itens[x.idx]; return it?(it.tipo==="ferramenta"?esc(it.tag):`${x.qtd}× ${esc(it.descricao)}`):""}).join(", ")}</td><td><span class="pill ${d.cond==="Em ordem"?"p-ok":"p-warn"}">${esc(d.cond||"—")}</span></td><td>${esc(d.obs||"")}</td></tr>`).join("")}
+  </tbody></table></div></section>`:""}
+  </div>`;
+}
+async function registrarDev(l){
+  const V = D.dev; V.erro="";
+  const itens = [];
+  for (const [k,v] of Object.entries(V.qtds)){
+    const idx=+k, it=l.itens[idx]; if(!it) continue;
+    const q = it.tipo==="ferramenta" ? (v?1:0) : Math.floor(num(v));
+    if (q<0 || q>outstanding(it)){ V.erro=`Quantidade inválida para "${it.descricao}" (máx. ${outstanding(it)}).`; return render(); }
+    if (q>0) itens.push({idx, qtd:q});
+  }
+  if (!itens.length){ V.erro="Informe ao menos um item retornando."; return render(); }
+  if (!V.data || V.data < l.dataSaida){ V.erro="A data de retorno não pode ser anterior à saída."; return render(); }
+  if (sb){
+    try{
+      const { data, error } = await sb.rpc("registrar_devolucao", {p_locacao:l.id, p_data:V.data, p_cond:V.cond, p_obs:V.obs, p_itens:itens});
+      if (error) throw new Error(friendly(error));
+      D.dev = null; await loadAll();
+      toast(data.status==="encerrada" ? `Contrato Nº ${l.numeroFmt} encerrado` : "Retorno registrado");
+    }catch(e){ V.erro = e.message; render(); }
+    return;
+  }
+  const novo = JSON.parse(JSON.stringify(strip(l)));
+  itens.forEach(x => { novo.itens[x.idx].qtdDevolvida = (novo.itens[x.idx].qtdDevolvida||0) + x.qtd; });
+  novo.devolucoes = [...(novo.devolucoes||[]), {data:V.data, itens, cond:V.cond, obs:V.obs, registradoEm:new Date().toISOString()}];
+  if (novo.itens.every(it=>outstanding(it)<=0)){ novo.status="encerrada"; novo.dataEncerramento = novo.devolucoes.reduce((m,d)=>d.data>m?d.data:m, V.data); }
+  try{ await put("locacoes", l.id, novo); D.dev=null; toast(novo.status==="encerrada"?`Contrato Nº ${l.numeroFmt} encerrado`:"Retorno registrado"); render(); }
+  catch(e){ V.erro="Não foi possível salvar o retorno. Tente de novo."; render(); }
+}
+
+/* ----- Equipamentos ----- */
+function vEquip(){
+  const F = D.fer, A = D.and, cfg = S.config;
+  return `${banner()}
+  <div class="head"><div><h1>Equipamentos</h1><p class="sub">Ferramentas são controladas por tag individual; andaimes, por tipo de peça e quantidade. A taxa de locação é um percentual sobre o valor base.</p></div></div>
+  <div class="stack">
+  <section class="panel">
+    <h2>Ferramentas</h2>
+    <form id="f-fer" novalidate>
+      <div class="fields">
+        <label class="f">Tag<input id="fer-tag" data-bind="fer.tag" value="${esc(F.tag)}" placeholder="FER-0001" class="mono"></label>
+        <label class="f" style="grid-column:span 2">Descrição<input id="fer-desc" data-bind="fer.descricao" value="${esc(F.descricao)}" placeholder="Martelete rompedor 10 kg"></label>
+        <label class="f">Categoria<input id="fer-cat" data-bind="fer.categoria" value="${esc(F.categoria)}" placeholder="Demolição"></label>
+      </div>
+      <div class="fields">
+        <label class="f">Valor base (R$)<input id="fer-val" type="number" step="0.01" min="0" data-bind="fer.valorBase" value="${esc(F.valorBase)}"></label>
+        <label class="f">Taxa mensal (%)<input id="fer-tm" type="number" step="0.01" min="0" data-bind="fer.taxaMensal" value="${esc(F.taxaMensal)}" placeholder="${cfg.taxaMensalPadrao}"></label>
+        <label class="f">Taxa anual (%)<input id="fer-ta" type="number" step="0.01" min="0" data-bind="fer.taxaAnual" value="${esc(F.taxaAnual)}" placeholder="${cfg.taxaAnualPadrao}"></label>
+        <label class="f" style="flex-direction:row;align-items:center;gap:8px;padding-top:20px"><input type="checkbox" id="fer-man" data-bind="fer.manutencao" ${F.manutencao?"checked":""} style="width:auto">Em manutenção</label>
+      </div>
+      ${F.erro?`<p class="err" role="alert">${esc(F.erro)}</p>`:""}
+      <div class="row end">${F.id?`<button type="button" class="btn" data-act="fer-cancel">Cancelar</button>`:""}<button type="submit" class="btn primary">${F.id?"Salvar alterações":"Cadastrar ferramenta"}</button></div>
+    </form>
+    <div class="tbl-wrap" style="margin-top:14px"><table><thead><tr><th>Tag</th><th>Descrição</th><th class="num">Valor base</th><th class="num">Mensal</th><th class="num">Anual</th><th>Situação</th><th></th></tr></thead><tbody>
+      ${S.ferramentas.length ? S.ferramentas.slice().sort((a,b)=>a.tag<b.tag?-1:1).map(f=>{const loc=ferramentaLocada(f.id); const st = f.manutencao?`<span class="pill p-warn">Manutenção</span>`: loc?`<span class="pill p-neu">Locada · <span class="cnum" style="font-weight:600">${esc(loc.numeroFmt)}</span></span>`:`<span class="pill p-ok">Disponível</span>`;
+        return `<tr><td><span class="tag">${esc(f.tag)}</span></td><td>${esc(f.descricao)}${f.categoria?` <span class="muted">· ${esc(f.categoria)}</span>`:""}</td><td class="num">${brl(f.valorBase)}</td><td class="num">${pct(f.taxaMensal)}<div class="hint">${brl(num(f.valorBase)*num(f.taxaMensal)/100)}</div></td><td class="num">${pct(f.taxaAnual)}<div class="hint">${brl(num(f.valorBase)*num(f.taxaAnual)/100)}</div></td><td>${st}</td><td class="num"><button class="btn link sm" data-edit-fer="${f.id}">Editar</button></td></tr>`}).join("") : `<tr><td colspan="7" class="empty">Nenhuma ferramenta cadastrada.</td></tr>`}
+    </tbody></table></div>
+  </section>
+  <section class="panel">
+    <h2>Andaimes — tipos de peça</h2>
+    <form id="f-and" novalidate>
+      <div class="fields">
+        <label class="f">Código<input id="and-cod" data-bind="and.codigo" value="${esc(A.codigo)}" placeholder="TUB-2M" class="mono"></label>
+        <label class="f" style="grid-column:span 2">Descrição da peça<input id="and-desc" data-bind="and.descricao" value="${esc(A.descricao)}" placeholder="Tubo galvanizado 2,00 m"></label>
+        <label class="f">Qtd. total em estoque<input id="and-qtd" type="number" step="1" min="0" data-bind="and.qtdTotal" value="${esc(A.qtdTotal)}"></label>
+      </div>
+      <div class="fields">
+        <label class="f">Valor unitário (R$)<input id="and-val" type="number" step="0.01" min="0" data-bind="and.valorUnitario" value="${esc(A.valorUnitario)}"></label>
+        <label class="f">Taxa mensal (%)<input id="and-tm" type="number" step="0.01" min="0" data-bind="and.taxaMensal" value="${esc(A.taxaMensal)}" placeholder="${cfg.taxaMensalPadrao}"></label>
+        <label class="f">Taxa anual (%)<input id="and-ta" type="number" step="0.01" min="0" data-bind="and.taxaAnual" value="${esc(A.taxaAnual)}" placeholder="${cfg.taxaAnualPadrao}"></label>
+      </div>
+      ${A.erro?`<p class="err" role="alert">${esc(A.erro)}</p>`:""}
+      <div class="row end">${A.id?`<button type="button" class="btn" data-act="and-cancel">Cancelar</button>`:""}<button type="submit" class="btn primary">${A.id?"Salvar alterações":"Cadastrar tipo de peça"}</button></div>
+    </form>
+    <div class="tbl-wrap" style="margin-top:14px"><table><thead><tr><th>Código</th><th>Peça</th><th class="num">Valor un.</th><th class="num">Mensal/pç</th><th class="num">Anual/pç</th><th class="num">Total</th><th class="num">Em campo</th><th class="num">Disponível</th><th></th></tr></thead><tbody>
+      ${S.andaimes.length ? S.andaimes.map(a=>`<tr><td><span class="tag">${esc(a.codigo)}</span></td><td>${esc(a.descricao)}</td><td class="num">${brl(a.valorUnitario)}</td><td class="num">${pct(a.taxaMensal)}<div class="hint">${brl(num(a.valorUnitario)*num(a.taxaMensal)/100)}</div></td><td class="num">${pct(a.taxaAnual)}<div class="hint">${brl(num(a.valorUnitario)*num(a.taxaAnual)/100)}</div></td><td class="num">${a.qtdTotal||0}</td><td class="num">${andaimeEmUso(a.id)}</td><td class="num"><b>${andaimeDisp(a)}</b></td><td class="num"><button class="btn link sm" data-edit-and="${a.id}">Editar</button></td></tr>`).join("") : `<tr><td colspan="9" class="empty">Nenhum tipo de peça cadastrado.</td></tr>`}
+    </tbody></table></div>
+  </section>
+  </div>`;
+}
+async function salvarFer(){
+  const F = D.fer; F.erro="";
+  const tag = F.tag.trim().toUpperCase();
+  if (!tag || !F.descricao.trim()) { F.erro="Tag e descrição são obrigatórias."; return render(); }
+  if (S.ferramentas.some(f=>f.tag.toUpperCase()===tag && f.id!==F.id)) { F.erro=`A tag ${tag} já está cadastrada.`; return render(); }
+  if (num(F.valorBase)<=0) { F.erro="Informe o valor base da ferramenta."; return render(); }
+  const id = F.id || uid();
+  await put("ferramentas", id, {tag, descricao:F.descricao.trim(), categoria:F.categoria.trim(), valorBase:num(F.valorBase),
+    taxaMensal: F.taxaMensal===""?num(S.config.taxaMensalPadrao):num(F.taxaMensal), taxaAnual: F.taxaAnual===""?num(S.config.taxaAnualPadrao):num(F.taxaAnual), manutencao:!!F.manutencao});
+  toast(F.id?`Ferramenta ${tag} atualizada`:`Ferramenta ${tag} cadastrada`);
+  D.fer = {id:null,tag:"",descricao:"",categoria:"",valorBase:"",taxaMensal:"",taxaAnual:"",manutencao:false}; render();
+}
+async function salvarAnd(){
+  const A = D.and; A.erro="";
+  if (!A.descricao.trim()) { A.erro="Descreva a peça."; return render(); }
+  const tot = Math.floor(num(A.qtdTotal));
+  if (A.id){ const emUso = andaimeEmUso(A.id); if (tot < emUso){ A.erro=`Há ${emUso} peças em campo; o total não pode ser menor que isso.`; return render(); } }
+  if (num(A.valorUnitario)<=0) { A.erro="Informe o valor unitário da peça."; return render(); }
+  const id = A.id || uid();
+  await put("andaimes", id, {codigo:A.codigo.trim().toUpperCase(), descricao:A.descricao.trim(), valorUnitario:num(A.valorUnitario), qtdTotal:tot,
+    taxaMensal: A.taxaMensal===""?num(S.config.taxaMensalPadrao):num(A.taxaMensal), taxaAnual: A.taxaAnual===""?num(S.config.taxaAnualPadrao):num(A.taxaAnual)});
+  toast(A.id?"Peça atualizada":"Tipo de peça cadastrado");
+  D.and = {id:null,codigo:"",descricao:"",valorUnitario:"",qtdTotal:"",taxaMensal:"",taxaAnual:""}; render();
+}
+
+/* ----- Clientes ----- */
+function vClientes(){
+  const C = D.cli;
+  return `${banner()}
+  <div class="head"><div><h1>Clientes</h1><p class="sub">Locatários. Os dados entram automaticamente no contrato.</p></div></div>
+  <div class="stack">
+  <section class="panel"><h2>${C.id?"Editar cliente":"Novo cliente"}</h2>
+    <form id="f-cli" novalidate>
+      <div class="fields">
+        <label class="f" style="grid-column:span 2">Razão social / nome<input id="cli-nome" data-bind="cli.nome" value="${esc(C.nome)}"></label>
+        <label class="f">CNPJ / CPF<input id="cli-doc" data-bind="cli.doc" value="${esc(C.doc)}" class="mono"></label>
+      </div>
+      <div class="fields">
+        <label class="f" style="grid-column:span 2">Endereço<input id="cli-end" data-bind="cli.endereco" value="${esc(C.endereco)}"></label>
+        <label class="f">Contato<input id="cli-cont" data-bind="cli.contato" value="${esc(C.contato)}"></label>
+        <label class="f">Telefone<input id="cli-tel" data-bind="cli.telefone" value="${esc(C.telefone)}"></label>
+        <label class="f">E-mail<input id="cli-mail" data-bind="cli.email" value="${esc(C.email)}"></label>
+      </div>
+      ${C.erro?`<p class="err" role="alert">${esc(C.erro)}</p>`:""}
+      <div class="row end">${C.id?`<button type="button" class="btn" data-act="cli-cancel">Cancelar</button>`:""}<button type="submit" class="btn primary">${C.id?"Salvar alterações":"Cadastrar cliente"}</button></div>
+    </form>
+  </section>
+  <section class="panel"><div class="tbl-wrap"><table><thead><tr><th>Cliente</th><th>CNPJ/CPF</th><th>Contato</th><th class="num">Ativas</th><th class="num">Contratos</th><th></th></tr></thead><tbody>
+    ${S.clientes.length ? S.clientes.slice().sort((a,b)=>a.nome<b.nome?-1:1).map(c=>{const ls=S.locacoes.filter(l=>l.clienteId===c.id); return `<tr><td>${esc(c.nome)}<div class="hint">${esc(c.endereco||"")}</div></td><td class="mono">${esc(c.doc||"—")}</td><td>${esc(c.contato||"")}${c.telefone?`<div class="hint">${esc(c.telefone)}</div>`:""}</td><td class="num">${ls.filter(locAtiva).length}</td><td class="num">${ls.length}</td><td class="num"><button class="btn link sm" data-edit-cli="${c.id}">Editar</button></td></tr>`}).join("") : `<tr><td colspan="6" class="empty">Nenhum cliente cadastrado.</td></tr>`}
+  </tbody></table></div></section></div>`;
+}
+async function salvarCli(){
+  const C = D.cli; C.erro="";
+  if (!C.nome.trim()){ C.erro="Informe o nome do cliente."; return render(); }
+  const id = C.id || uid();
+  await put("clientes", id, {nome:C.nome.trim(), doc:C.doc.trim(), endereco:C.endereco.trim(), contato:C.contato.trim(), telefone:C.telefone.trim(), email:C.email.trim()});
+  toast(C.id?"Cliente atualizado":"Cliente cadastrado");
+  D.cli = {id:null,nome:"",doc:"",endereco:"",contato:"",telefone:"",email:""}; render();
+}
+
+/* ----- Configurações ----- */
+function vConfig(){
+  if (!D.cfg) D.cfg = {...S.config};
+  const G = D.cfg;
+  return `${banner()}
+  <div class="head"><div><h1>Configurações</h1><p class="sub">Dados da locadora que entram nos contratos e taxas padrão sugeridas no cadastro.</p></div></div>
+  <form id="f-cfg" class="stack" novalidate>
+    <section class="panel stack"><h2 style="margin:0">Locadora</h2>
+      <div class="fields">
+        <label class="f" style="grid-column:span 2">Razão social<input id="cfg-razao" data-bind="cfg.razao" value="${esc(G.razao)}"></label>
+        <label class="f">CNPJ<input id="cfg-cnpj" data-bind="cfg.cnpj" value="${esc(G.cnpj)}" class="mono"></label>
+      </div>
+      <div class="fields">
+        <label class="f" style="grid-column:span 2">Endereço<input id="cfg-end" data-bind="cfg.endereco" value="${esc(G.endereco)}"></label>
+        <label class="f">Cidade/UF (local de assinatura)<input id="cfg-cid" data-bind="cfg.cidade" value="${esc(G.cidade)}"></label>
+        <label class="f">Foro (comarca)<input id="cfg-foro" data-bind="cfg.foro" value="${esc(G.foro)}"></label>
+      </div>
+    </section>
+    <section class="panel stack"><h2 style="margin:0">Taxas e alertas</h2>
+      <div class="fields">
+        <label class="f">Taxa mensal padrão (%)<input id="cfg-tm" type="number" step="0.01" data-bind="cfg.taxaMensalPadrao" value="${esc(G.taxaMensalPadrao)}"></label>
+        <label class="f">Taxa anual padrão (%)<input id="cfg-ta" type="number" step="0.01" data-bind="cfg.taxaAnualPadrao" value="${esc(G.taxaAnualPadrao)}"></label>
+        <label class="f">Multa por atraso (% ao mês)<input id="cfg-multa" type="number" step="0.01" data-bind="cfg.multaAtraso" value="${esc(G.multaAtraso)}"></label>
+        <label class="f">Alertar retorno com antecedência (dias)<input id="cfg-alerta" type="number" step="1" data-bind="cfg.alertaDias" value="${esc(G.alertaDias)}"></label>
+      </div>
+      <p class="hint">Exemplo: equipamento de ${brl(10000)} com taxa mensal de ${pct(G.taxaMensalPadrao)} → ${brl(10000*num(G.taxaMensalPadrao)/100)}/mês; anual de ${pct(G.taxaAnualPadrao)} → ${brl(10000*num(G.taxaAnualPadrao)/100)}/ano (equivale a ${brl(10000*num(G.taxaAnualPadrao)/100/12)}/mês).</p>
+    </section>
+    <div class="row end"><span class="hint">Próximo contrato: Nº ${numFmt(Math.max(S.contador,maxNumero())+1,new Date().getFullYear())} · Template ${TEMPLATE_VERSAO}</span><button type="submit" class="btn primary">Salvar configurações</button></div>
+  </form>
+  <section class="panel stack" style="margin-top:18px"><h2 style="margin:0">Cópia de segurança</h2>
+    <p class="sub" style="margin:0">O plano gratuito do Supabase não guarda backups. Baixe uma cópia completa dos dados (clientes, equipamentos, contratos, retornos, configurações e auditoria) <b>toda semana</b> e guarde em local seguro, como Google Drive ou OneDrive.</p>
+    <div class="row">${S.mode==="db"?`<button type="button" class="btn primary" data-act="backup">Baixar cópia de segurança (.json)</button>`:`<span class="hint">Disponível quando conectado ao banco.</span>`}${ultimoBackup()?`<span class="hint">Último download neste computador: ${esc(ultimoBackup())}</span>`:""}</div>
+  </section>`;
+}
+function ultimoBackup(){ return lsGet("wr.ultimoBackup") || ""; }
+async function fetchAll(table, order){
+  const out = []; const page = 1000;
+  for (let from = 0; ; from += page){
+    let q = sb.from(table).select("*").range(from, from + page - 1);
+    if (order) q = q.order(order);
+    const { data, error } = await q;
+    if (error) throw new Error(friendly(error));
+    out.push(...data); if (data.length < page) break;
+  }
+  return out;
+}
+async function baixarBackup(btn){
+  if (!sb || !session) return;
+  const txt = btn.textContent; btn.disabled = true; btn.textContent = "Gerando cópia…";
+  try{
+    const tabelas = [["config","id"],["contador_contrato","id"],["equipe","email"],["clientes","created_at"],["ferramentas","created_at"],["andaimes","created_at"],["locacoes","numero"],["locacao_itens","locacao_id"],["devolucoes","created_at"],["auditoria","id"]];
+    const dados = {};
+    for (const [t,o] of tabelas) dados[t] = await fetchAll(t, o);
+    const agora = new Date();
+    const pacote = { sistema:"WR Locações", versao_app:APP_VERSION, gerado_em:agora.toISOString(), gerado_por:session.user.email,
+      contagem:Object.fromEntries(Object.entries(dados).map(([k,v])=>[k,v.length])), dados };
+    const blob = new Blob([JSON.stringify(pacote, null, 1)], {type:"application/json"});
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+    const d = todayISO();
+    a.download = `WR-Locacoes_backup_${d}.json`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 3000);
+    lsSet("wr.ultimoBackup", fmtD(d) + " " + agora.toTimeString().slice(0,5));
+    toast(`Cópia baixada: ${pacote.contagem.locacoes} contrato(s), ${pacote.contagem.clientes} cliente(s)`);
+    render();
+  }catch(e){ toast(e.message || "Não foi possível gerar a cópia."); }
+  finally{ btn.disabled = false; btn.textContent = txt; }
+}
+async function salvarCfg(){
+  const G = D.cfg;
+  await put("config","app",{razao:G.razao.trim(), cnpj:G.cnpj.trim(), endereco:G.endereco.trim(), cidade:G.cidade.trim(), foro:G.foro.trim(),
+    taxaMensalPadrao:num(G.taxaMensalPadrao), taxaAnualPadrao:num(G.taxaAnualPadrao), multaAtraso:num(G.multaAtraso), alertaDias:Math.max(0,Math.floor(num(G.alertaDias)))});
+  toast("Configurações salvas");
+}
+
+/* ---------- contrato ---------- */
+const extenso = n => `${n} dia${n===1?"":"s"}`;
+function contratoInner(l){
+  const e = l.empresa || S.config, c = l.cliente || {};
+  const per = l.modalidade==="anual"?"anual":"mensal", perU = l.modalidade==="anual"?"ano":"mês";
+  const ph = (v, t) => v ? esc(v) : `<span style="background:#ffe9a8">[${t}]</span>`;
+  const dias = Math.max(0,daysBetween(l.dataSaida,l.previsaoRetorno));
+  const total = valorPeriodo(l);
+  const dataExt = new Date((l.criadoEm||todayISO()).slice(0,10)+"T12:00:00").toLocaleDateString("pt-BR",{day:"numeric",month:"long",year:"numeric"});
+  return `<h1>Contrato de Locação de Bens Móveis</h1>
+  <p class="n">Nº ${esc(l.numeroFmt)}</p>
+  <h4>Das partes</h4>
+  <p><b>LOCADORA:</b> ${ph(e.razao,"razão social")}, inscrita no CNPJ sob o nº ${ph(e.cnpj,"CNPJ")}, com sede em ${ph(e.endereco,"endereço")}.</p>
+  <p><b>LOCATÁRIA:</b> ${ph(c.nome,"cliente")}, inscrita no CNPJ/CPF sob o nº ${ph(c.doc,"CNPJ/CPF")}, com endereço em ${ph(c.endereco,"endereço")}${c.contato?`, neste ato representada por ${esc(c.contato)}`:""}.</p>
+  <p>As partes acima qualificadas celebram o presente contrato de locação de bens móveis, nos termos dos arts. 565 a 578 do Código Civil, mediante as cláusulas seguintes.</p>
+  <h4>Cláusula 1ª — Do objeto</h4>
+  <p>A LOCADORA dá em locação à LOCATÁRIA os equipamentos abaixo relacionados, identificados por tag (ferramentas) ou por tipo e quantidade de peças (andaimes), para uso ${l.local?`no local: <b>${esc(l.local)}</b>`:"no local indicado pela LOCATÁRIA"}.</p>
+  <table><thead><tr><th>Identificação</th><th>Descrição</th><th class="num">Qtd</th><th class="num">Valor base un.</th><th class="num">Taxa ${per}</th><th class="num">Valor/${perU}</th></tr></thead><tbody>
+  ${l.itens.map(it=>`<tr><td>${esc(it.tag||"—")}</td><td>${esc(it.descricao)}</td><td class="num">${it.qtd}</td><td class="num">${brl(it.valorBase)}</td><td class="num">${pct(l.modalidade==="anual"?it.taxaAnual:it.taxaMensal)}</td><td class="num">${brl(valorItemPeriodo(it,l.modalidade))}</td></tr>`).join("")}
+  <tr><td colspan="5" style="text-align:right"><b>Total por ${perU}</b></td><td class="num"><b>${brl(total)}</b></td></tr>
+  </tbody></table>
+  <p>Parágrafo único. O valor base de cada item corresponde ao valor de reposição do bem e servirá de referência para indenização em caso de perda, furto, roubo ou dano irreparável.</p>
+  <h4>Cláusula 2ª — Do prazo</h4>
+  <p>A locação tem início em <b>${fmtD(l.dataSaida)}</b>, data da retirada dos equipamentos, com previsão de devolução em <b>${fmtD(l.previsaoRetorno)}</b>, totalizando ${extenso(dias)}. A permanência dos equipamentos após essa data prorroga a locação pelo mesmo regime de cobrança, sem prejuízo do disposto na Cláusula 6ª.</p>
+  <h4>Cláusula 3ª — Do preço e da forma de cálculo</h4>
+  <p>Pela locação, a LOCATÁRIA pagará à LOCADORA o valor ${per} de <b>${brl(total)}</b>, calculado pela aplicação da taxa ${per} de locação sobre o valor base de cada item, multiplicada pela respectiva quantidade. Períodos incompletos serão cobrados proporcionalmente aos dias de efetiva posse, considerando-se ${l.modalidade==="anual"?"o ano de 365 dias":"o mês de 30 dias"}.</p>
+  <p>Parágrafo único. Devoluções parciais reduzem o valor devido a partir da data de retorno registrada pela LOCADORA para os itens devolvidos.</p>
+  <h4>Cláusula 4ª — Da entrega e devolução</h4>
+  <p>Os equipamentos são entregues em perfeito estado de conservação e funcionamento, conferidos na retirada${l.responsavel?` por <b>${esc(l.responsavel)}</b>, representante da LOCATÁRIA`:""}. A devolução deverá ocorrer no estabelecimento da LOCADORA, nas mesmas condições, ressalvado o desgaste natural pelo uso regular, sendo conferida por tag e por contagem de peças.</p>
+  <h4>Cláusula 5ª — Das obrigações da locatária</h4>
+  <p>A LOCATÁRIA obriga-se a: (a) utilizar os equipamentos exclusivamente para o fim a que se destinam e por pessoal habilitado, observadas as normas regulamentadoras aplicáveis, em especial a NR-18 e a NR-35 para montagem e uso de andaimes; (b) não sublocar, emprestar ou ceder os equipamentos sem autorização escrita; (c) comunicar imediatamente qualquer avaria, perda ou sinistro; (d) arcar com reparos de danos decorrentes de mau uso e com a reposição, pelo valor base, de itens ou peças não devolvidos.</p>
+  <h4>Cláusula 6ª — Do atraso</h4>
+  <p>A não devolução na data prevista, sem prorrogação acordada, sujeitará a LOCATÁRIA ao pagamento do aluguel proporcional ao período excedente acrescido de multa de ${pct(l.multaAtraso ?? 2)} ao mês sobre o valor ${per} em atraso, calculada pró-rata.</p>
+  <h4>Cláusula 7ª — Do foro</h4>
+  <p>Fica eleito o foro da comarca de ${ph(e.foro,"comarca")} para dirimir quaisquer dúvidas oriundas deste contrato.</p>
+  <p style="margin-top:18px">E, por estarem justas e contratadas, as partes assinam o presente em duas vias de igual teor.</p>
+  <p style="text-align:right">${ph(e.cidade,"cidade/UF")}, ${dataExt}.</p>
+  <div class="sign"><div>${ph(e.razao,"LOCADORA")}<br><small>LOCADORA</small></div><div>${ph(c.nome,"LOCATÁRIA")}<br><small>LOCATÁRIA</small></div></div>
+  <p class="foot">Documento gerado pelo sistema WR Locações v${esc(l.appVersao||APP_VERSION)} · modelo ${esc(l.templateVersao||TEMPLATE_VERSAO)} · contrato ${esc(l.numeroFmt)}</p>`;
+}
+/* ----- Contratos ----- */
+let buscaContrato = "";
+function vContratos(){
+  const q = buscaContrato.trim().toLowerCase();
+  const list = S.locacoes.slice().sort((a,b)=>(b.numero||0)-(a.numero||0))
+    .filter(l => !q || (l.numeroFmt||"").toLowerCase().includes(q) || clienteNome(l).toLowerCase().includes(q));
+  return `${banner()}
+  <div class="head"><div><h1>Contratos</h1><p class="sub">Todos os contratos emitidos. O PDF é gerado com os dados congelados no momento da emissão.</p></div>
+  <label class="f" style="min-width:min(280px,100%)">Buscar<input id="busca-contrato" data-busca value="${esc(buscaContrato)}" placeholder="Nº do contrato ou cliente"></label></div>
+  <section class="panel">${list.length ? `<div class="tbl-wrap"><table><thead><tr><th>Contrato</th><th>Cliente</th><th>Emissão</th><th>Modalidade</th><th class="num">Valor</th><th>Situação</th><th></th></tr></thead><tbody>
+    ${list.map(l=>{const s=situacao(l); return `<tr><td class="cnum">${esc(l.numeroFmt)}</td><td>${esc(clienteNome(l))}</td><td class="mono">${fmtD((l.criadoEm||l.dataSaida||"").slice(0,10))}</td><td>${l.modalidade==="anual"?"Anual":"Mensal"}</td><td class="num">${brl(valorPeriodo(l))}<span class="muted">/${l.modalidade==="anual"?"ano":"mês"}</span></td><td><span class="pill ${s.cls}">${s.txt}</span></td>
+      <td class="num" style="white-space:nowrap"><button class="btn sm" data-contrato="${l.id}">Ver</button> <button class="btn sm primary" data-pdf="${l.id}">Baixar PDF</button></td></tr>`}).join("")}
+  </tbody></table></div>` : `<p class="empty">${q?"Nenhum contrato encontrado para essa busca.":"Nenhum contrato emitido ainda."}</p>`}</section>`;
+}
+document.addEventListener("input", e => { if (e.target.dataset && e.target.dataset.busca !== undefined){ buscaContrato = e.target.value; render(); } });
+
+async function baixarPDF(l, btn){
+  if (!window.html2pdf){ toast("O gerador de PDF ainda está carregando. Tente de novo em instantes."); return; }
+  const txt = btn ? btn.textContent : ""; if (btn){ btn.disabled = true; btn.textContent = "Gerando…"; }
+  const host = document.createElement("div");
+  host.style.cssText = "position:fixed;left:-10000px;top:0;width:700px;background:#fff";
+  host.innerHTML = `<article class="paper pdf">${contratoInner(l)}</article>`;
+  document.body.appendChild(host);
+  try{
+    await html2pdf().set({
+      margin:[12,12,14,12], filename:"Contrato_" + l.numeroFmt.replace("/","-") + ".pdf",
+      image:{type:"jpeg", quality:0.96}, html2canvas:{scale:2, backgroundColor:"#ffffff", useCORS:true},
+      jsPDF:{unit:"mm", format:"a4", orientation:"portrait"},
+      pagebreak:{mode:["css","legacy"], avoid:["tr","h4",".sign","p"]}
+    }).from(host.firstElementChild).save();
+    toast(`Contrato Nº ${l.numeroFmt} baixado em PDF`);
+  }catch(e){ console.error(e); toast("Não foi possível gerar o PDF. Tente de novo."); }
+  finally{ host.remove(); if (btn){ btn.disabled = false; btn.textContent = txt; } }
+}
+
+/* ----- Atualizações ----- */
+function vAtualizacoes(){
+  return `${banner()}
+  <div class="head"><div><h1>Atualizações</h1><p class="sub">O que mudou em cada versão. Você está usando a versão <b>${APP_VERSION}</b>.</p></div></div>
+  <div class="stack">${VERSOES.map((r,i)=>`<section class="panel"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Versão ${r.v}</h2><span class="row">${i===0?`<span class="pill p-ok">Atual</span>`:""}<span class="muted mono">${fmtD(r.data)}</span></span></div>
+    <ul class="changes">${r.itens.map(t=>`<li>${esc(t)}</li>`).join("")}</ul></section>`).join("")}</div>`;
+}
+/* aviso de nova versão publicada */
+let novaVersao = null;
+async function checarVersao(){
+  try{
+    const r = await fetch("version.json?t=" + Date.now(), {cache:"no-store"});
+    if (!r.ok) return;
+    const j = await r.json();
+    if (j.version && j.version !== APP_VERSION && novaVersao !== j.version){ novaVersao = j.version; render(); }
+  }catch(e){}
+}
+setInterval(checarVersao, 5*60*1000); setTimeout(checarVersao, 15000);
+
+let contratoAberto = null;
+function abrirContrato(l){
+  contratoAberto = l;
+  $("#overlay-root").innerHTML = `<div class="overlay" role="dialog" aria-modal="true" aria-label="Contrato ${esc(l.numeroFmt)}">
+    <div class="doc-bar"><span class="t">Contrato Nº ${esc(l.numeroFmt)}</span>
+      <div class="row"><button class="btn primary" data-pdf="${l.id}">Baixar PDF</button><button class="btn" data-act="imprimir">Imprimir</button><button class="btn" data-act="copiar">Copiar texto</button><button class="btn" data-act="fechar" id="btn-fechar">Fechar</button></div></div>
+    <article class="paper" id="paper">${contratoInner(l)}</article></div>`;
+  document.getElementById("btn-fechar").focus();
+}
+function fecharContrato(){ contratoAberto=null; $("#overlay-root").innerHTML=""; }
+function contratoArquivo(l){
+  const css = `body{font-family:Georgia,serif;max-width:760px;margin:40px auto;padding:0 24px;line-height:1.6;color:#1b1b1b}h1{font-size:18px;text-align:center;text-transform:uppercase}.n{text-align:center;font-family:monospace}h4{text-transform:uppercase;margin:18px 0 6px}p{text-align:justify;margin:0 0 8px}table{border-collapse:collapse;width:100%;font-size:12.5px;font-family:Arial,sans-serif}th,td{padding:5px 6px;border-bottom:1px solid #ccc;text-align:left}.num{text-align:right}.sign{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:50px;text-align:center}.sign div{border-top:1px solid #333;padding-top:6px}.foot{margin-top:30px;font-family:monospace;font-size:10px;color:#777;text-align:center}@media print{body{margin:0}}`;
+  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Contrato ${l.numeroFmt}</title><style>${css}</style></head><body>${contratoInner(l)}</body></html>`;
+}
+
+/* ---------- eventos ---------- */
+function setPath(path, value){ const [o,k] = path.split("."); (o==="auth" ? A : D[o])[k] = value; }
+document.addEventListener("input", e => {
+  const t = e.target;
+  if (t.dataset.bind){ setPath(t.dataset.bind, t.type==="checkbox" ? t.checked : t.value);
+    if (t.dataset.bind.startsWith("loc.") && ["loc.saida","loc.previsao"].includes(t.dataset.bind)){ const box = document.querySelector(".sum"); if (box) box.outerHTML = resumoHTML(D.loc); }
+    if (t.dataset.bind.startsWith("cfg.taxa")) render();
+  }
+  if (t.dataset.dev !== undefined && D.dev){ D.dev.qtds[t.dataset.dev] = t.type==="checkbox" ? t.checked : t.value; }
+});
+document.addEventListener("change", e => { const t=e.target; if (t.tagName==="SELECT" && t.dataset.bind){ setPath(t.dataset.bind, t.value); } });
+document.addEventListener("submit", e => {
+  e.preventDefault();
+  const id = e.target.id;
+  if (id==="f-auth") submitAuth();
+  else if (id==="f-loc") registrar();
+  else if (id==="f-dev"){ const l=S.locacoes.find(x=>x.id===sel.loc); if(l) registrarDev(l); }
+  else if (id==="f-fer") salvarFer().catch(e=>{D.fer.erro=e.message||"Não foi possível salvar.";render();});
+  else if (id==="f-and") salvarAnd().catch(e=>{D.and.erro=e.message||"Não foi possível salvar.";render();});
+  else if (id==="f-cli") salvarCli().catch(e=>{D.cli.erro=e.message||"Não foi possível salvar.";render();});
+  else if (id==="f-cfg") salvarCfg().catch(e=>toast(e.message||"Não foi possível salvar as configurações."));
+});
+document.addEventListener("click", async e => {
+  const b = e.target.closest("[data-go],[data-open],[data-act],[data-rm],[data-mod],[data-filtro],[data-back],[data-contrato],[data-edit-fer],[data-edit-and],[data-edit-cli],[data-auth],[data-auth-cancel],[data-sair],[data-pdf],[data-recarregar]");
+  if (!b) { if (e.target.classList.contains("overlay")) fecharContrato(); return; }
+  const d = b.dataset;
+  if (d.auth){ authView=d.auth; authErr=""; authMsg=""; if (d.auth==="nova-senha" && session){ S.mode="auth"; } return render(); }
+  if (d.authCancel !== undefined){ authView="login"; A.senha=A.senha2=""; authErr=""; applySession(); return; }
+  if (d.pdf){ const l=S.locacoes.find(x=>x.id===d.pdf); if(l) baixarPDF(l, b); return; }
+  if (d.recarregar !== undefined){ location.reload(); return; }
+  if (d.sair !== undefined){ await sb.auth.signOut(); return; }
+  if (d.go) return go(d.go);
+  if (d.open) return go("locacoes",{loc:d.open});
+  if (d.back !== undefined){ sel.loc=null; return render(); }
+  if (d.filtro){ sel.filtro=d.filtro; return render(); }
+  if (d.mod){ D.loc.modalidade=d.mod; return render(); }
+  if (d.rm){ D.loc.itens.splice(+d.rm,1); return render(); }
+  if (d.contrato){ const l=S.locacoes.find(x=>x.id===d.contrato); if(l) abrirContrato(l); return; }
+  if (d.editFer){ const f=S.ferramentas.find(x=>x.id===d.editFer); D.fer={...f, valorBase:String(f.valorBase), taxaMensal:String(f.taxaMensal), taxaAnual:String(f.taxaAnual), erro:""}; render(); document.getElementById("fer-tag")?.scrollIntoView({block:"center"}); return; }
+  if (d.editAnd){ const a=S.andaimes.find(x=>x.id===d.editAnd); D.and={...a, valorUnitario:String(a.valorUnitario), qtdTotal:String(a.qtdTotal), taxaMensal:String(a.taxaMensal), taxaAnual:String(a.taxaAnual), erro:""}; render(); document.getElementById("and-cod")?.scrollIntoView({block:"center"}); return; }
+  if (d.editCli){ const c=S.clientes.find(x=>x.id===d.editCli); D.cli={id:c.id,nome:c.nome||"",doc:c.doc||"",endereco:c.endereco||"",contato:c.contato||"",telefone:c.telefone||"",email:c.email||"",erro:""}; render(); window.scrollTo(0,0); return; }
+  switch(d.act){
+    case "add-f": return addItem("ferramenta");
+    case "add-a": return addItem("andaime");
+    case "fer-cancel": D.fer={id:null,tag:"",descricao:"",categoria:"",valorBase:"",taxaMensal:"",taxaAnual:"",manutencao:false}; return render();
+    case "and-cancel": D.and={id:null,codigo:"",descricao:"",valorUnitario:"",qtdTotal:"",taxaMensal:"",taxaAnual:""}; return render();
+    case "cli-cancel": D.cli={id:null,nome:"",doc:"",endereco:"",contato:"",telefone:"",email:""}; return render();
+    case "dev-all": { const l=S.locacoes.find(x=>x.id===sel.loc); if(!l) return; l.itens.forEach((it,idx)=>{ if(outstanding(it)>0) D.dev.qtds[idx] = it.tipo==="ferramenta" ? true : String(outstanding(it)); }); return render(); }
+    case "backup": return baixarBackup(b);
+    case "fechar": return fecharContrato();
+    case "copiar": {
+      const txt = document.getElementById("paper").innerText;
+      try { await navigator.clipboard.writeText(txt); toast("Texto do contrato copiado"); }
+      catch(err){ const r=document.createRange(); r.selectNodeContents(document.getElementById("paper")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast("Texto selecionado — use Ctrl+C para copiar"); }
+      return;
+    }
+    case "imprimir": {
+      if (!contratoAberto) return;
+      const w = window.open("", "_blank");
+      if (!w){ toast("O navegador bloqueou a janela. Permita pop-ups para este site."); return; }
+      w.document.write(contratoArquivo(contratoAberto)); w.document.close(); w.focus();
+      setTimeout(()=>w.print(), 400);
+      return;
+    }
+  }
+});
+document.addEventListener("keydown", e => {
+  if (e.key==="Escape" && contratoAberto) fecharContrato();
+  if (e.key==="Enter" && e.target.matches("tr[data-open],.it[data-open]")) go("locacoes",{loc:e.target.dataset.open});
+});
+window.addEventListener("hashchange", () => { const h=location.hash.slice(1); if (TABS.some(t=>t[0]===h)) go(h); });
+
+boot();
+</script>
+</body>
+</html>

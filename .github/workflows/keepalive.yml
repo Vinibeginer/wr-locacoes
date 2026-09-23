@@ -1,0 +1,16 @@
+# Mantém o projeto Supabase (plano gratuito) ativo com uma consulta leve por dia.
+# A chave abaixo é a publishable (pública); só permite chamar a função ping().
+name: keep-alive
+on:
+  schedule:
+    - cron: "0 12 * * *"   # todo dia às 09:00 (Brasília)
+  workflow_dispatch: {}
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Consultar o banco
+        run: |
+          curl -fsS -X POST "https://gxpvvlfmaadiiqktirlj.supabase.co/rest/v1/rpc/ping" \
+            -H "apikey: sb_publishable_a7Q-3VPi6AE38vpKtCNMyg_Zwtxivzr" \
+            -H "Content-Type: application/json" -d '{}'
