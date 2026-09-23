@@ -22,6 +22,8 @@ Controle de saída e retorno de equipamentos (ferramentas por **tag**, andaimes 
 No Chrome ou Edge, abra o sistema e clique em **⤓ Instalar aplicativo** no menu lateral (ou no ícone de instalar na barra de endereço). Ele ganha ícone na área de trabalho/barra de tarefas e abre em janela própria. Continua precisando de internet e recebe as atualizações sozinho.
 Arquivos envolvidos: `manifest.webmanifest`, `sw.js`, `offline.html` e a pasta `icons/` (ícones provisórios, a trocar quando a identidade visual for definida).
 
+**Instalador automático (Windows):** `instalador/Instalar-WR-Locacoes.cmd` — clique duplo cria os atalhos *WR Locações* na área de trabalho e no menu Iniciar, abrindo o sistema em janela própria pelo Chrome (ou Edge). Sem administrador. `Desinstalar-WR-Locacoes.cmd` remove os atalhos. Download: https://vinibeginer.github.io/wr-locacoes/instalador/Instalador-WR-Locacoes.zip
+
 ## Liberar outra pessoa
 1. Supabase → **Authentication → Users → Add user → Create new user** (marque *Auto Confirm User*).
 2. Supabase → **SQL Editor**: `insert into equipe (email, nome) values ('email@da.pessoa', 'Nome');`
