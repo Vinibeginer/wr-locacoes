@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>WR Locações</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#3E5563">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -202,10 +207,13 @@ body.no-nav aside.nav{display:none}
 <script>
 /* =========================================================
    WR Locações — protótipo de controle de locação
-   APP_VERSION 1.4.0 · template de contrato v1
+   APP_VERSION 1.5.0 · template de contrato v1
    ========================================================= */
-const APP_VERSION = "1.4.0";
+const APP_VERSION = "1.5.0";
 const VERSOES = [
+  {v:"1.5.0", data:"2026-09-23", itens:[
+    "O sistema pode ser instalado como aplicativo no computador (Chrome ou Edge): ícone na área de trabalho e janela própria.",
+    "Aviso de falta de internet ao abrir o aplicativo sem conexão."]},
   {v:"1.4.0", data:"2026-09-23", itens:[
     "Novas modalidades de cobrança: diária, semanal e quinzenal, além de mensal e anual.",
     "Cada equipamento tem taxa própria para cada modalidade; taxas padrão em Configurações.",
@@ -566,7 +574,7 @@ function navHTML(){
       if (k==="locacoes" && ativas.length) badge = `<span class="count ${atras?"alert":""}">${atras?atras+" atras.":ativas.length}</span>`;
       return `<button data-go="${k}" ${view===k?'aria-current="page"':""}>${l}${badge}</button>`;
     }).join("") +
-    `<div class="spacer"></div><div class="conn ${S.mode}"><i></i><span>${connTxt}</span></div>${S.mode==="db"?`<button data-auth="nova-senha">Alterar senha</button><button data-sair>Sair</button>`:""}`;
+    `<div class="spacer"></div>${installPrompt?`<button data-act="instalar" title="Criar ícone na área de trabalho e abrir em janela própria">⤓ Instalar aplicativo</button>`:""}<div class="conn ${S.mode}"><i></i><span>${connTxt}</span></div>${S.mode==="db"?`<button data-auth="nova-senha">Alterar senha</button><button data-sair>Sair</button>`:""}`;
 }
 const bannerVersao = () => novaVersao ? `<div class="banner" style="background:var(--ok-soft)"><b>Nova versão ${esc(novaVersao)} disponível.</b> <button class="btn sm" data-recarregar>Atualizar agora</button></div>` : "";
 const banner = () => bannerVersao() + (S.mode==="local" ? `<div class="banner"><b>Demonstração local:</b> o Supabase ainda não foi configurado no arquivo config.js. O fluxo funciona, mas nada fica salvo ao recarregar.</div>` : S.loadErr ? `<div class="banner" style="background:var(--bad-soft)"><b>Erro ao carregar dados:</b> ${esc(S.loadErr)}</div>` : "");
@@ -1188,6 +1196,7 @@ document.addEventListener("click", async e => {
   if (d.editAnd){ const a=S.andaimes.find(x=>x.id===d.editAnd); D.and={...a, valorUnitario:String(a.valorUnitario), qtdTotal:String(a.qtdTotal), ...taxasTexto(a), erro:""}; render(); document.getElementById("and-cod")?.scrollIntoView({block:"center"}); return; }
   if (d.editCli){ const c=S.clientes.find(x=>x.id===d.editCli); D.cli={id:c.id,nome:c.nome||"",doc:c.doc||"",endereco:c.endereco||"",contato:c.contato||"",telefone:c.telefone||"",email:c.email||"",erro:""}; render(); window.scrollTo(0,0); return; }
   switch(d.act){
+    case "instalar": { const ev = installPrompt; if (!ev) return; ev.prompt(); const r = await ev.userChoice; if (r.outcome==="accepted"){ installPrompt=null; render(); } return; }
     case "add-f": return addItem("ferramenta");
     case "add-a": return addItem("andaime");
     case "fer-cancel": D.fer={id:null,tag:"",descricao:"",categoria:"",valorBase:"",...taxasVazias(),manutencao:false}; return render();
@@ -1218,6 +1227,12 @@ document.addEventListener("keydown", e => {
   if (e.key==="Enter" && e.target.matches("tr[data-open],.it[data-open]")) go("locacoes",{loc:e.target.dataset.open});
 });
 window.addEventListener("hashchange", () => { const h=location.hash.slice(1); if (TABS.some(t=>t[0]===h)) go(h); });
+
+/* ---------- aplicativo instalável (PWA) ---------- */
+let installPrompt = null;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; render(); });
+window.addEventListener("appinstalled", () => { installPrompt = null; render(); toast("Aplicativo instalado"); });
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").catch(()=>{});
 
 boot();
 </script>

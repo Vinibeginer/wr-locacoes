@@ -4,7 +4,7 @@ Controle de saída e retorno de equipamentos (ferramentas por **tag**, andaimes 
 
 - **Frontend:** `index.html` (arquivo único, GitHub Pages)
 - **Banco e login:** Supabase (`supabase/migrations/001_estrutura.sql` e `002_modalidades.sql`, já aplicadas)
-- **Versão:** 1.4.0 · modelo de contrato `CT-LOC v1` (histórico na página *Atualizações* do sistema)
+- **Versão:** 1.5.0 · modelo de contrato `CT-LOC v1` (histórico na página *Atualizações* do sistema)
 
 ---
 
@@ -17,6 +17,10 @@ Controle de saída e retorno de equipamentos (ferramentas por **tag**, andaimes 
 - Hospedado no **GitHub Pages** a partir da branch `main` deste repositório (raiz). Cada commit na `main` atualiza o site em ~1 minuto.
 - A cada nova versão: atualizar `APP_VERSION` e `VERSOES` no `index.html` **e** o `version.json`, no mesmo commit. Quem estiver com o sistema aberto vê o aviso "Nova versão disponível".
 - `.github/workflows/keepalive.yml` consulta o banco uma vez por dia para o Supabase gratuito não pausar.
+
+## Instalar como aplicativo no computador
+No Chrome ou Edge, abra o sistema e clique em **⤓ Instalar aplicativo** no menu lateral (ou no ícone de instalar na barra de endereço). Ele ganha ícone na área de trabalho/barra de tarefas e abre em janela própria. Continua precisando de internet e recebe as atualizações sozinho.
+Arquivos envolvidos: `manifest.webmanifest`, `sw.js`, `offline.html` e a pasta `icons/` (ícones provisórios, a trocar quando a identidade visual for definida).
 
 ## Liberar outra pessoa
 1. Supabase → **Authentication → Users → Add user → Create new user** (marque *Auto Confirm User*).
