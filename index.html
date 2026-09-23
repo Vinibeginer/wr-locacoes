@@ -85,6 +85,13 @@ td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
 tr.click{cursor:pointer}tr.click:hover td{background:var(--surface-2)}
 td.num,th.num{text-align:right}
 .mono{font-family:var(--f-mono);font-size:12.5px}
+td.fill{max-width:0;width:100%}
+@media (min-width:1201px){.grid2.painel{grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr)}}
+@media (max-width:1200px){.grid2.painel{grid-template-columns:1fr}}
+.trunc{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.busca{display:flex;align-items:center;gap:10px;margin:14px 0 4px}
+.busca input{max-width:380px}
+td.mono{white-space:nowrap}
 .tag{font-family:var(--f-mono);font-size:12px;font-weight:500;background:var(--surface-2);border:1px solid var(--line-strong);border-radius:4px;padding:1px 6px;white-space:nowrap}
 .cnum{font-family:var(--f-mono);font-weight:500;color:var(--accent);white-space:nowrap}
 .pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
@@ -194,10 +201,15 @@ body.no-nav aside.nav{display:none}
 <script>
 /* =========================================================
    WR Locações — protótipo de controle de locação
-   APP_VERSION 1.2.1 · template de contrato v1
+   APP_VERSION 1.3.0 · template de contrato v1
    ========================================================= */
-const APP_VERSION = "1.2.1";
+const APP_VERSION = "1.3.0";
 const VERSOES = [
+  {v:"1.3.0", data:"2026-09-23", itens:[
+    "Busca nas listas de ferramentas, andaimes, clientes e locações (ignora acentos e maiúsculas).",
+    "Nova locação: a ferramenta é adicionada digitando a tag (com sugestões) e Enter — funciona também com leitor de código de barras.",
+    "Carregamento de todos os registros, sem o limite de 1.000 linhas por consulta do banco.",
+    "Ajustes de layout para telas de computador."]},
   {v:"1.2.1", data:"2026-09-23", itens:[
     "Recuperação de senha: além de clicar no link do e-mail, agora é possível copiar o link e colá-lo no sistema para criar a nova senha."]},
   {v:"1.2.0", data:"2026-09-23", itens:[
@@ -241,6 +253,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 function toast(msg){ const t = document.createElement("div"); t.className="toast"; t.textContent = msg; $("#toast-root").replaceChildren(t); setTimeout(()=>t.remove(), 3200); }
 function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
 function lsSet(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+
+/* ---------- busca nas listas ---------- */
+const BUSCA = {fer:"", and:"", cli:"", loc:""};
+const norm = v => String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+function casa(q, ...campos){ const t = norm(q).trim(); if (!t) return true; const alvo = norm(campos.join(" ")); return t.split(/\s+/).every(p=>alvo.includes(p)); }
+function campoBusca(k, ph, n, total){
+  return `<div class="busca"><input id="busca-${k}" type="search" data-busca-lista="${k}" value="${esc(BUSCA[k])}" placeholder="${ph}" aria-label="${ph}"><span class="hint">${BUSCA[k].trim()?`${n} de ${total}`:`${total} no total`}</span></div>`;
+}
 
 /* ---------- regras de negócio ---------- */
 function outstanding(it){ return (it.qtd||0) - (it.qtdDevolvida||0); }
@@ -324,6 +344,16 @@ function friendly(e){
   if (/Failed to fetch|NetworkError/i.test(m)) return "Sem conexão com o servidor. Verifique a internet e tente de novo.";
   return m || "Não foi possível salvar. Tente de novo.";
 }
+// O Supabase devolve no máximo 1.000 linhas por consulta; busca em páginas até trazer tudo.
+async function todas(consulta, pag = 1000){
+  let tudo = [];
+  for (let de = 0; ; de += pag){
+    const r = await consulta().range(de, de + pag - 1);
+    if (r.error) return r;
+    tudo = tudo.concat(r.data);
+    if (r.data.length < pag) return {data:tudo, error:null};
+  }
+}
 async function loadAll(){
   if (!sb || !session) return;
   const eq = await sb.rpc("eh_equipe");
@@ -332,10 +362,10 @@ async function loadAll(){
     S.clientes=[]; S.ferramentas=[]; S.andaimes=[]; S.locacoes=[]; render(); return;
   }
   const [c,f,a,l,g,n] = await Promise.all([
-    sb.from("clientes").select("*"),
-    sb.from("ferramentas").select("*"),
-    sb.from("andaimes").select("*").order("created_at"),
-    sb.from("locacoes").select("*, locacao_itens(*), devolucoes(*)").order("numero",{ascending:false}),
+    todas(() => sb.from("clientes").select("*").order("id")),
+    todas(() => sb.from("ferramentas").select("*").order("id")),
+    todas(() => sb.from("andaimes").select("*").order("created_at").order("id")),
+    todas(() => sb.from("locacoes").select("*, locacao_itens(*), devolucoes(*)").order("numero",{ascending:false})),
     sb.from("config").select("*").eq("id",1).maybeSingle(),
     sb.from("contador_contrato").select("ultimo").eq("id",1).maybeSingle()
   ]);
@@ -537,7 +567,7 @@ function vPainel(){
     <div class="kpi"><span class="v">${ferLoc}<span class="muted" style="font-size:18px"> / ${S.ferramentas.length}</span></span><span class="l">Ferramentas locadas</span></div>
     <div class="kpi"><span class="v">${pecasUso}<span class="muted" style="font-size:18px"> / ${pecasTot}</span></span><span class="l">Peças de andaime em campo</span></div>
   </div>
-  <div class="grid2">
+  <div class="grid2 painel">
     <section class="panel"><h2>Últimos contratos</h2>${recentes.length ? tabelaLoc(recentes, true) : `<p class="empty">Nenhuma locação registrada ainda.</p>`}</section>
     <section class="panel"><h2>Requer atenção</h2>
       ${atencao.length ? `<div class="list-att">${atencao.map(({l,s})=>`<div class="it" data-open="${l.id}" tabindex="0"><div><span class="cnum">Nº ${esc(l.numeroFmt)}</span><div>${esc(clienteNome(l))}</div><div class="hint">Previsão ${fmtD(l.previsaoRetorno)}</div></div><span class="pill ${s.cls}">${s.txt}</span></div>`).join("")}</div>`
@@ -549,7 +579,7 @@ function vPainel(){
 }
 function tabelaLoc(list, compact){
   return `<div class="tbl-wrap"><table><thead><tr><th>Contrato</th><th>Cliente</th>${compact?"":"<th>Saída</th>"}<th>Previsão</th>${compact?"":"<th>Itens</th>"}<th class="num">Valor</th><th>Situação</th></tr></thead><tbody>
-  ${list.map(l=>{const s=situacao(l); return `<tr class="click" data-open="${l.id}" tabindex="0"><td class="cnum">${esc(l.numeroFmt)}</td><td>${esc(clienteNome(l))}</td>${compact?"":`<td class="mono">${fmtD(l.dataSaida)}</td>`}<td class="mono">${fmtD(l.previsaoRetorno)}</td>${compact?"":`<td class="muted">${resumoItens(l)}</td>`}<td class="num">${brl(valorPeriodo(l))}<span class="muted">/${l.modalidade==="anual"?"ano":"mês"}</span></td><td><span class="pill ${s.cls}">${s.txt}</span></td></tr>`}).join("")}
+  ${list.map(l=>{const s=situacao(l); return `<tr class="click" data-open="${l.id}" tabindex="0"><td class="cnum">${esc(l.numeroFmt)}</td><td${compact?' class="fill"':""}>${compact?`<span class="trunc" title="${esc(clienteNome(l))}">${esc(clienteNome(l))}</span>`:esc(clienteNome(l))}</td>${compact?"":`<td class="mono">${fmtD(l.dataSaida)}</td>`}<td class="mono">${fmtD(l.previsaoRetorno)}</td>${compact?"":`<td class="muted">${resumoItens(l)}</td>`}<td class="num">${brl(valorPeriodo(l))}<span class="muted">/${l.modalidade==="anual"?"ano":"mês"}</span></td><td><span class="pill ${s.cls}">${s.txt}</span></td></tr>`}).join("")}
   </tbody></table></div>`;
 }
 
@@ -584,7 +614,8 @@ function vNova(){
         <div>
           <h3 style="margin-bottom:6px">Ferramenta por tag</h3>
           <div class="adder two">
-            <select id="pick-f" data-bind="loc.pickF"><option value="">${ferDisp.length?"Selecione a tag…":"Nenhuma ferramenta disponível"}</option>${ferDisp.map(f=>`<option value="${f.id}" ${L.pickF===f.id?"selected":""}>${esc(f.tag)} — ${esc(f.descricao)}</option>`).join("")}</select>
+            <input id="pick-f" class="mono" data-bind="loc.pickF" value="${esc(L.pickF)}" list="dl-fer" autocomplete="off" placeholder="${ferDisp.length?`Digite ou leia a tag e tecle Enter (${ferDisp.length} disponíveis)`:"Nenhuma ferramenta disponível"}">
+            <datalist id="dl-fer">${ferDisp.map(f=>`<option value="${esc(f.tag)}">${esc(f.descricao)}</option>`).join("")}</datalist>
             <button type="button" class="btn" data-act="add-f">Adicionar</button>
           </div>
         </div>
@@ -628,7 +659,13 @@ function resumoHTML(L){
 function addItem(tipo){
   const L = D.loc; L.erro="";
   if (tipo==="ferramenta"){
-    const f = S.ferramentas.find(x=>x.id===L.pickF); if(!f){ L.erro="Selecione uma ferramenta pela tag."; return render(); }
+    const tag = String(L.pickF||"").trim().toUpperCase();
+    if (!tag){ L.erro="Digite a tag da ferramenta."; return render(); }
+    const f = S.ferramentas.find(x=>x.tag.toUpperCase()===tag);
+    if (!f){ L.erro=`A tag ${tag} não está cadastrada.`; return render(); }
+    if (L.itens.some(i=>i.tipo==="ferramenta"&&i.refId===f.id)){ L.erro=`A tag ${f.tag} já está nesta locação.`; L.pickF=""; return render(); }
+    if (f.manutencao){ L.erro=`A ferramenta ${f.tag} está em manutenção.`; return render(); }
+    const emUso = ferramentaLocada(f.id); if (emUso){ L.erro=`A ferramenta ${f.tag} está locada no contrato ${emUso.numeroFmt}.`; return render(); }
     L.itens.push({tipo, refId:f.id, tag:f.tag, descricao:f.descricao, qtd:1, valorBase:num(f.valorBase), taxaMensal:num(f.taxaMensal), taxaAnual:num(f.taxaAnual), qtdDevolvida:0});
     L.pickF="";
   } else {
@@ -696,11 +733,12 @@ async function registrar(){
 function vLocacoes(){
   if (sel.loc){ const l = S.locacoes.find(x=>x.id===sel.loc); if (l) return vDetalhe(l); }
   const f = sel.filtro;
-  const list = S.locacoes.filter(l => f==="todas" ? true : f==="ativas" ? locAtiva(l) : !locAtiva(l)).sort((a,b)=>(b.numero||0)-(a.numero||0));
+  const doFiltro = S.locacoes.filter(l => f==="todas" ? true : f==="ativas" ? locAtiva(l) : !locAtiva(l));
+  const list = doFiltro.filter(l => casa(BUSCA.loc, l.numeroFmt, clienteNome(l), l.local, l.responsavel, l.itens.map(i=>i.tag||"").join(" "))).sort((a,b)=>(b.numero||0)-(a.numero||0));
   return `${banner()}
   <div class="head"><div><h1>Locações</h1><p class="sub">Todos os contratos emitidos, em ordem de numeração.</p></div>
   <div class="seg" role="group" aria-label="Filtro">${[["ativas","Ativas"],["encerradas","Encerradas"],["todas","Todas"]].map(([k,t])=>`<button type="button" data-filtro="${k}" aria-pressed="${f===k}">${t}</button>`).join("")}</div></div>
-  <section class="panel">${list.length ? tabelaLoc(list) : `<p class="empty">Nenhuma locação neste filtro.</p>`}</section>`;
+  <section class="panel">${campoBusca("loc","Nº do contrato, cliente, obra ou tag", list.length, doFiltro.length)}${list.length ? tabelaLoc(list) : `<p class="empty">${BUSCA.loc.trim()?"Nenhuma locação encontrada para essa busca.":"Nenhuma locação neste filtro."}</p>`}</section>`;
 }
 function vDetalhe(l){
   const s = situacao(l), ac = acumulado(l);
@@ -780,6 +818,8 @@ async function registrarDev(l){
 /* ----- Equipamentos ----- */
 function vEquip(){
   const F = D.fer, A = D.and, cfg = S.config;
+  const ferLista = S.ferramentas.filter(f=>casa(BUSCA.fer, f.tag, f.descricao, f.categoria, f.manutencao?"manutencao":"", ferramentaLocada(f.id)?.numeroFmt||"")).sort((a,b)=>a.tag.localeCompare(b.tag,"pt-BR",{numeric:true}));
+  const andLista = S.andaimes.filter(a=>casa(BUSCA.and, a.codigo, a.descricao));
   return `${banner()}
   <div class="head"><div><h1>Equipamentos</h1><p class="sub">Ferramentas são controladas por tag individual; andaimes, por tipo de peça e quantidade. A taxa de locação é um percentual sobre o valor base.</p></div></div>
   <div class="stack">
@@ -800,9 +840,10 @@ function vEquip(){
       ${F.erro?`<p class="err" role="alert">${esc(F.erro)}</p>`:""}
       <div class="row end">${F.id?`<button type="button" class="btn" data-act="fer-cancel">Cancelar</button>`:""}<button type="submit" class="btn primary">${F.id?"Salvar alterações":"Cadastrar ferramenta"}</button></div>
     </form>
-    <div class="tbl-wrap" style="margin-top:14px"><table><thead><tr><th>Tag</th><th>Descrição</th><th class="num">Valor base</th><th class="num">Mensal</th><th class="num">Anual</th><th>Situação</th><th></th></tr></thead><tbody>
-      ${S.ferramentas.length ? S.ferramentas.slice().sort((a,b)=>a.tag<b.tag?-1:1).map(f=>{const loc=ferramentaLocada(f.id); const st = f.manutencao?`<span class="pill p-warn">Manutenção</span>`: loc?`<span class="pill p-neu">Locada · <span class="cnum" style="font-weight:600">${esc(loc.numeroFmt)}</span></span>`:`<span class="pill p-ok">Disponível</span>`;
-        return `<tr><td><span class="tag">${esc(f.tag)}</span></td><td>${esc(f.descricao)}${f.categoria?` <span class="muted">· ${esc(f.categoria)}</span>`:""}</td><td class="num">${brl(f.valorBase)}</td><td class="num">${pct(f.taxaMensal)}<div class="hint">${brl(num(f.valorBase)*num(f.taxaMensal)/100)}</div></td><td class="num">${pct(f.taxaAnual)}<div class="hint">${brl(num(f.valorBase)*num(f.taxaAnual)/100)}</div></td><td>${st}</td><td class="num"><button class="btn link sm" data-edit-fer="${f.id}">Editar</button></td></tr>`}).join("") : `<tr><td colspan="7" class="empty">Nenhuma ferramenta cadastrada.</td></tr>`}
+    ${campoBusca("fer","Tag, descrição ou categoria", ferLista.length, S.ferramentas.length)}
+    <div class="tbl-wrap" style="margin-top:6px"><table><thead><tr><th>Tag</th><th>Descrição</th><th class="num">Valor base</th><th class="num">Mensal</th><th class="num">Anual</th><th>Situação</th><th></th></tr></thead><tbody>
+      ${ferLista.length ? ferLista.map(f=>{const loc=ferramentaLocada(f.id); const st = f.manutencao?`<span class="pill p-warn">Manutenção</span>`: loc?`<span class="pill p-neu">Locada · <span class="cnum" style="font-weight:600">${esc(loc.numeroFmt)}</span></span>`:`<span class="pill p-ok">Disponível</span>`;
+        return `<tr><td><span class="tag">${esc(f.tag)}</span></td><td>${esc(f.descricao)}${f.categoria?` <span class="muted">· ${esc(f.categoria)}</span>`:""}</td><td class="num">${brl(f.valorBase)}</td><td class="num">${pct(f.taxaMensal)}<div class="hint">${brl(num(f.valorBase)*num(f.taxaMensal)/100)}</div></td><td class="num">${pct(f.taxaAnual)}<div class="hint">${brl(num(f.valorBase)*num(f.taxaAnual)/100)}</div></td><td>${st}</td><td class="num"><button class="btn link sm" data-edit-fer="${f.id}">Editar</button></td></tr>`}).join("") : `<tr><td colspan="7" class="empty">${S.ferramentas.length?"Nenhuma ferramenta encontrada para essa busca.":"Nenhuma ferramenta cadastrada."}</td></tr>`}
     </tbody></table></div>
   </section>
   <section class="panel">
@@ -821,8 +862,9 @@ function vEquip(){
       ${A.erro?`<p class="err" role="alert">${esc(A.erro)}</p>`:""}
       <div class="row end">${A.id?`<button type="button" class="btn" data-act="and-cancel">Cancelar</button>`:""}<button type="submit" class="btn primary">${A.id?"Salvar alterações":"Cadastrar tipo de peça"}</button></div>
     </form>
-    <div class="tbl-wrap" style="margin-top:14px"><table><thead><tr><th>Código</th><th>Peça</th><th class="num">Valor un.</th><th class="num">Mensal/pç</th><th class="num">Anual/pç</th><th class="num">Total</th><th class="num">Em campo</th><th class="num">Disponível</th><th></th></tr></thead><tbody>
-      ${S.andaimes.length ? S.andaimes.map(a=>`<tr><td><span class="tag">${esc(a.codigo)}</span></td><td>${esc(a.descricao)}</td><td class="num">${brl(a.valorUnitario)}</td><td class="num">${pct(a.taxaMensal)}<div class="hint">${brl(num(a.valorUnitario)*num(a.taxaMensal)/100)}</div></td><td class="num">${pct(a.taxaAnual)}<div class="hint">${brl(num(a.valorUnitario)*num(a.taxaAnual)/100)}</div></td><td class="num">${a.qtdTotal||0}</td><td class="num">${andaimeEmUso(a.id)}</td><td class="num"><b>${andaimeDisp(a)}</b></td><td class="num"><button class="btn link sm" data-edit-and="${a.id}">Editar</button></td></tr>`).join("") : `<tr><td colspan="9" class="empty">Nenhum tipo de peça cadastrado.</td></tr>`}
+    ${campoBusca("and","Código ou descrição da peça", andLista.length, S.andaimes.length)}
+    <div class="tbl-wrap" style="margin-top:6px"><table><thead><tr><th>Código</th><th>Peça</th><th class="num">Valor un.</th><th class="num">Mensal/pç</th><th class="num">Anual/pç</th><th class="num">Total</th><th class="num">Em campo</th><th class="num">Disponível</th><th></th></tr></thead><tbody>
+      ${andLista.length ? andLista.map(a=>`<tr><td><span class="tag">${esc(a.codigo)}</span></td><td>${esc(a.descricao)}</td><td class="num">${brl(a.valorUnitario)}</td><td class="num">${pct(a.taxaMensal)}<div class="hint">${brl(num(a.valorUnitario)*num(a.taxaMensal)/100)}</div></td><td class="num">${pct(a.taxaAnual)}<div class="hint">${brl(num(a.valorUnitario)*num(a.taxaAnual)/100)}</div></td><td class="num">${a.qtdTotal||0}</td><td class="num">${andaimeEmUso(a.id)}</td><td class="num"><b>${andaimeDisp(a)}</b></td><td class="num"><button class="btn link sm" data-edit-and="${a.id}">Editar</button></td></tr>`).join("") : `<tr><td colspan="9" class="empty">${S.andaimes.length?"Nenhuma peça encontrada para essa busca.":"Nenhum tipo de peça cadastrado."}</td></tr>`}
     </tbody></table></div>
   </section>
   </div>`;
@@ -855,6 +897,7 @@ async function salvarAnd(){
 /* ----- Clientes ----- */
 function vClientes(){
   const C = D.cli;
+  const cliLista = S.clientes.filter(c=>casa(BUSCA.cli, c.nome, c.doc, c.doc.replace(/\D/g,""), c.contato, c.telefone, c.email, c.endereco)).sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR",{numeric:true,sensitivity:"base"}));
   return `${banner()}
   <div class="head"><div><h1>Clientes</h1><p class="sub">Locatários. Os dados entram automaticamente no contrato.</p></div></div>
   <div class="stack">
@@ -874,8 +917,8 @@ function vClientes(){
       <div class="row end">${C.id?`<button type="button" class="btn" data-act="cli-cancel">Cancelar</button>`:""}<button type="submit" class="btn primary">${C.id?"Salvar alterações":"Cadastrar cliente"}</button></div>
     </form>
   </section>
-  <section class="panel"><div class="tbl-wrap"><table><thead><tr><th>Cliente</th><th>CNPJ/CPF</th><th>Contato</th><th class="num">Ativas</th><th class="num">Contratos</th><th></th></tr></thead><tbody>
-    ${S.clientes.length ? S.clientes.slice().sort((a,b)=>a.nome<b.nome?-1:1).map(c=>{const ls=S.locacoes.filter(l=>l.clienteId===c.id); return `<tr><td>${esc(c.nome)}<div class="hint">${esc(c.endereco||"")}</div></td><td class="mono">${esc(c.doc||"—")}</td><td>${esc(c.contato||"")}${c.telefone?`<div class="hint">${esc(c.telefone)}</div>`:""}</td><td class="num">${ls.filter(locAtiva).length}</td><td class="num">${ls.length}</td><td class="num"><button class="btn link sm" data-edit-cli="${c.id}">Editar</button></td></tr>`}).join("") : `<tr><td colspan="6" class="empty">Nenhum cliente cadastrado.</td></tr>`}
+  <section class="panel">${campoBusca("cli","Nome, CNPJ/CPF, contato ou telefone", cliLista.length, S.clientes.length)}<div class="tbl-wrap" style="margin-top:6px"><table><thead><tr><th>Cliente</th><th>CNPJ/CPF</th><th>Contato</th><th class="num">Ativas</th><th class="num">Contratos</th><th></th></tr></thead><tbody>
+    ${cliLista.length ? cliLista.map(c=>{const ls=S.locacoes.filter(l=>l.clienteId===c.id); return `<tr><td>${esc(c.nome)}<div class="hint">${esc(c.endereco||"")}</div></td><td class="mono">${esc(c.doc||"—")}</td><td>${esc(c.contato||"")}${c.telefone?`<div class="hint">${esc(c.telefone)}</div>`:""}</td><td class="num">${ls.filter(locAtiva).length}</td><td class="num">${ls.length}</td><td class="num"><button class="btn link sm" data-edit-cli="${c.id}">Editar</button></td></tr>`}).join("") : `<tr><td colspan="6" class="empty">${S.clientes.length?"Nenhum cliente encontrado para essa busca.":"Nenhum cliente cadastrado."}</td></tr>`}
   </tbody></table></div></section></div>`;
 }
 async function salvarCli(){
@@ -1080,6 +1123,7 @@ document.addEventListener("input", e => {
   }
   if (t.dataset.dev !== undefined && D.dev){ D.dev.qtds[t.dataset.dev] = t.type==="checkbox" ? t.checked : t.value; }
 });
+document.addEventListener("input", e => { const k = e.target.dataset && e.target.dataset.buscaLista; if (k){ BUSCA[k] = e.target.value; render(); } });
 document.addEventListener("change", e => { const t=e.target; if (t.tagName==="SELECT" && t.dataset.bind){ setPath(t.dataset.bind, t.value); } });
 document.addEventListener("submit", e => {
   e.preventDefault();
@@ -1137,6 +1181,7 @@ document.addEventListener("click", async e => {
   }
 });
 document.addEventListener("keydown", e => {
+  if (e.key==="Enter" && (e.target.id==="pick-f" || e.target.id==="pick-q")){ e.preventDefault(); addItem(e.target.id==="pick-f"?"ferramenta":"andaime"); return; }
   if (e.key==="Escape" && contratoAberto) fecharContrato();
   if (e.key==="Enter" && e.target.matches("tr[data-open],.it[data-open]")) go("locacoes",{loc:e.target.dataset.open});
 });
